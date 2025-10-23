@@ -4,6 +4,7 @@ public abstract class Admin
 {
 	private AdminUser nowAccount = new AdminUser(null,0,null);
 	protected static ArrayList<AdminUser> allAccounts = new ArrayList<AdminUser>(); 
+	
 	public Admin()
 	{
 		allAccounts.add(new AdminUser("0001",1111,"館長"));
@@ -13,6 +14,7 @@ public abstract class Admin
 		allAccounts.add(new AdminUser("0005",5555,"員工"));
 		allAccounts.add(new AdminUser("0006",6666,"員工"));
 	}
+	
 	public void setNowAccount(AdminUser m)
 	{nowAccount=m;}
 	public AdminUser getNowAccount()
