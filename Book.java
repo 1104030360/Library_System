@@ -387,7 +387,7 @@ public static String getbookname()//admin use
     String output2="";
     for(int counter4=0;counter4<oldbook.size();counter4++)
     {
-    output2+="書名:   "+oldbook.get(counter4)+" "+"ID:   "+bookID.get(counter4)+" "+"作者  :"+writters.get(counter4)+" "+"出版社:  "+publisher.get(counter4)+"\n";
+    output2+="書名:"+oldbook.get(counter4)+"ID:"+bookID.get(counter4)+oldbook.get(counter4)+" "+"作者:"+writters.get(counter4)+" "+"出版社:"+publisher.get(counter4)+"\n";
     }
     if(returnbookoption==0)
     {
