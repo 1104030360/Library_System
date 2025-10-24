@@ -1,0 +1,37 @@
+[
+  {
+    "id": "001",
+    "title": "Java",
+    "author": "吳柏毅",
+    "publisher": "中央大學",
+    "isAvailable": true
+  },
+  {
+    "id": "002",
+    "title": "管數課本",
+    "author": "吳昀蓁",
+    "publisher": "台灣大學",
+    "isAvailable": true
+  },
+  {
+    "id": "003",
+    "title": "英文課本",
+    "author": "林俊廷",
+    "publisher": "交通大學",
+    "isAvailable": true
+  },
+  {
+    "id": "004",
+    "title": "國文課本",
+    "author": "屠安弟",
+    "publisher": "政治大學",
+    "isAvailable": true
+  },
+  {
+    "id": "005",
+    "title": "體育課本",
+    "author": "陳重言",
+    "publisher": "清華大學",
+    "isAvailable": true
+  }
+]

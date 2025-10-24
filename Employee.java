@@ -47,7 +47,7 @@ public class Employee extends Admin
 		if(x==1)
 			{return true;}
 		else
-			{return true;}
+			{return false;}
 	}
 	
 	public boolean checkPassword(int password)  //檢查此密碼是不是對應的Employee密碼，回傳true&false
