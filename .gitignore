@@ -1,18 +1,17 @@
-# Claude Code generated files
+
 CLAUDE.md
 Improve_list/
 .claude/
 
-# Cursor IDE
 .cursor/
 
-# Compiled class files
+
 *.class
 
-# Log files
+
 *.log
 
-# Package files
+
 *.jar
 *.war
 *.nar
@@ -21,24 +20,23 @@ Improve_list/
 *.tar.gz
 *.rar
 
-# Virtual machine crash logs
 hs_err_pid*
 
-# macOS system files
+
 .DS_Store
 .AppleDouble
 .LSOverride
 
-# Windows system files
+
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# IDE - VSCode
+
 .vscode/
 *.code-workspace
 
-# IDE - IntelliJ IDEA
+
 .idea/
 *.iml
 *.iws
