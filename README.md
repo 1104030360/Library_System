@@ -22,8 +22,6 @@
 ./start-server.sh
 ```
 
-伺服器將啟動在 `http://localhost:7070`
-
 ### 方法 2: 手動啟動
 
 ```bash
@@ -34,7 +32,26 @@ javac -d backend/bin -cp "lib/*:backend/src" backend/src/*.java
 java -cp "lib/*:backend/bin" LibraryApiServer
 ```
 
+### 方法 3: 使用 Docker 啟動
+
+確保您已安裝 Docker。執行以下指令來建立映像檔並啟動容器：
+
+```bash
+# 使用 docker-compose 進行建置與啟動 (推薦)
+docker-compose up --build -d
+
+# 或者，您也可以使用 docker-run.sh 腳本
+./docker-run.sh
+```
+
+若要停止服務，請執行：
+```bash
+docker-compose down
+```
+
 ### 開啟瀏覽器
+
+伺服器將啟動在 `http://localhost:7070`。
 
 - **首頁 (書籍清單)**: `http://localhost:7070`
 - **登入頁面**: `http://localhost:7070/login.html`
@@ -181,7 +198,7 @@ JavaProj 2/
 
 ## 授權
 
-本專案為學習專案，中央大學資管系大一程式設計期末作業。
+本專案為學習專案，中央大學資管系期末作業。
 
 ---
 
