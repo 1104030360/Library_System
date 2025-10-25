@@ -1,4 +1,3 @@
-
 CLAUDE.md
 Improve_list/
 .claude/
@@ -61,3 +60,10 @@ nbdist/
 *.bak
 *.swp
 *~
+
+# Database files
+data/library.db
+data/library.db-journal
+
+# AI-generated context files
+GEMINI.md
