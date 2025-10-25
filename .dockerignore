@@ -1,0 +1,55 @@
+# Docker ignore file
+# Exclude unnecessary files from Docker build context
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Build output (will be compiled in Docker)
+backend/bin/
+*.class
+
+# Test files
+test/
+*.jar.original
+
+# Documentation (not needed in container)
+*.md
+!README.md
+
+# Legacy code (archived, not needed)
+legacy/
+
+# Improve list (documentation only)
+Improve_list/
+
+# Scripts (not needed in container)
+start-server.sh
+start-stage5.sh
+run-tests.sh
+
+# Database (will be created/mounted)
+data/*.db
+data/*.db-journal
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.bak
+*~

@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  library-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: library-api-server
+    ports:
+      - "7070:7070"
+    volumes:
+      # Mount data directory for SQLite persistence
+      - ./data:/app/data
+    environment:
+      - JAVA_OPTS=-Xmx512m -Xms256m
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7070/api/status"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    networks:
+      - library-network
+
+networks:
+  library-network:
+    driver: bridge
