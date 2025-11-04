@@ -568,4 +568,20 @@ public class BookDatabaseRepository {
 
         return topBooks;
     }
+
+    /**
+     * Library Statistics - Inner class for library statistics
+     * Will be fully implemented in Phase 3
+     */
+    public static class LibraryStats {
+        public int totalBooks;
+        public int availableBooks;
+        public int borrowedBooks;
+
+        public LibraryStats(int total, int available, int borrowed) {
+            this.totalBooks = total;
+            this.availableBooks = available;
+            this.borrowedBooks = borrowed;
+        }
+    }
 }
