@@ -571,7 +571,7 @@ public class BookDatabaseRepository {
 
     /**
      * Library Statistics - Inner class for library statistics
-     * Will be fully implemented in Phase 3
+     * Phase 3 - Complete implementation
      */
     public static class LibraryStats {
         public int totalBooks;
@@ -583,5 +583,85 @@ public class BookDatabaseRepository {
             this.availableBooks = available;
             this.borrowedBooks = borrowed;
         }
+
+        @Override
+        public String toString() {
+            return String.format("Total: %d books | Available: %d | Borrowed: %d",
+                               totalBooks, availableBooks, borrowedBooks);
+        }
+    }
+
+    /**
+     * Search books by title (fuzzy search)
+     * Phase 3 - RAG data retrieval
+     * @param keyword Title keyword to search for
+     * @return List of books matching the keyword (max 20 results)
+     */
+    public List<BookInfo> searchByTitle(String keyword) {
+        List<BookInfo> books = new ArrayList<>();
+        String sql = "SELECT id, title, author, publisher, description, is_available " +
+                    "FROM books WHERE title LIKE ? ORDER BY title LIMIT 20";
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, "%" + keyword + "%");
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                BookInfo book = new BookInfo(
+                    rs.getString("id"),
+                    rs.getString("title"),
+                    rs.getString("author"),
+                    rs.getString("publisher"),
+                    rs.getString("description")
+                );
+
+                if (rs.getInt("is_available") == 0) {
+                    book.markAsBorrowed();
+                }
+
+                books.add(book);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error searching books by title: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return books;
+    }
+
+    /**
+     * Get library statistics
+     * Phase 3 - RAG data retrieval
+     * @return LibraryStats object with total, available, and borrowed counts
+     */
+    public LibraryStats getStats() {
+        String sql = """
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN is_available = 1 THEN 1 ELSE 0 END) as available,
+                SUM(CASE WHEN is_available = 0 THEN 1 ELSE 0 END) as borrowed
+            FROM books
+            """;
+
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            if (rs.next()) {
+                int total = rs.getInt("total");
+                int available = rs.getInt("available");
+                int borrowed = rs.getInt("borrowed");
+
+                return new LibraryStats(total, available, borrowed);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting statistics: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        // Return empty stats on error
+        return new LibraryStats(0, 0, 0);
     }
 }
