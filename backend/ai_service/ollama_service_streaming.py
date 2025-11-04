@@ -11,6 +11,7 @@ import json
 import time
 import re
 import os
+import requests
 from datetime import datetime
 from dotenv import load_dotenv
 from ollama import Client
@@ -355,45 +356,113 @@ Return ONLY a JSON array (no markdown):
         })
 
 
+def get_default_system_prompt():
+    """
+    獲取預設的 system prompt（不使用 RAG）
+    """
+    return """你是一個專業的圖書館 AI 助理，負責協助使用者處理圖書館相關問題。
+
+你的職責：
+1. 回答圖書館規則和常見問題
+2. 協助使用者查詢書籍資訊
+3. 提供借閱歷史查詢
+4. 說明借還書流程
+5. 提供圖書館統計資訊
+
+回答原則：
+- 回答要簡潔、準確、友善
+- 使用繁體中文回答
+- 如果不確定答案，誠實告知使用者
+- 涉及具體操作時，提供清楚的步驟說明"""
+
+
 @app.route('/chat', methods=['POST'])
 def chat():
-    """Simple chat endpoint - Linus style: just works, no fancy stuff"""
+    """
+    聊天端點（支援 RAG）
+
+    Request Body:
+        {
+            "message": "使用者訊息",
+            "history": [{"role": "user", "content": "..."}, ...],
+            "context": "{...}"  // 可選：ChatContext JSON
+        }
+    """
     print_log("💬", "=" * 70, "cyan")
     print_log("📨", "收到聊天請求", "cyan")
 
-    data = request.json
-    user_message = data.get('message', '')
-    history = data.get('history', [])
+    try:
+        data = request.json
+        user_message = data.get('message', '')
+        history = data.get('history', [])
+        context_json = data.get('context', None)  # 新增：可選的 context
 
-    print_log("👤", f"使用者訊息: {user_message[:50]}...", "blue")
-    print_log("📝", f"對話歷史: {len(history)} 輪", "blue")
-    print()
+        if not user_message:
+            return jsonify({'success': False, 'message': '訊息不能為空'}), 400
 
-    # Build messages array - simple and straightforward
-    messages = [
-        {
-            "role": "system",
-            "content": "你是中大圖書館的 AI 助手。協助使用者解答關於圖書館借還系統的問題。回答要簡潔、友善、使用繁體中文。"
-        }
-    ]
+        print_log("👤", f"使用者訊息: {user_message[:50]}...", "blue")
+        print_log("📝", f"對話歷史: {len(history)} 輪", "blue")
 
-    # Add conversation history (keep last 5 rounds only - Linus: simple limits)
-    for msg in history[-10:]:  # Last 5 rounds = 10 messages (user + assistant)
+        # 構建訊息列表
+        messages = []
+
+        # 1. 決定 system prompt（根據是否有 context）
+        if context_json:
+            # 有 context：使用 RAG system prompt
+            try:
+                from rag_prompt_builder import build_rag_system_prompt, validate_context
+
+                # 解析 context
+                context_data = json.loads(context_json)
+
+                # 驗證 context
+                is_valid, error_msg = validate_context(context_data)
+                if not is_valid:
+                    print_log("⚠️", f"Context validation failed: {error_msg}", "yellow")
+                    # 驗證失敗，使用預設 prompt
+                    system_prompt = get_default_system_prompt()
+                else:
+                    # 構建 RAG system prompt
+                    system_prompt = build_rag_system_prompt(context_data)
+                    has_data = context_data.get('hasData', False)
+                    print_log("✅", f"Using RAG system prompt (hasData={has_data})", "green")
+
+            except Exception as e:
+                print_log("❌", f"Error building RAG prompt: {e}", "red")
+                import traceback
+                traceback.print_exc()
+                # 發生錯誤，使用預設 prompt
+                system_prompt = get_default_system_prompt()
+        else:
+            # 沒有 context：使用預設 system prompt
+            system_prompt = get_default_system_prompt()
+            print_log("ℹ️", "Using default system prompt (no context provided)", "blue")
+
+        # 2. 添加 system prompt
         messages.append({
-            "role": msg.get('role', 'user'),
-            "content": msg.get('content', '')
+            "role": "system",
+            "content": system_prompt
         })
 
-    # Add current user message
-    messages.append({
-        "role": "user",
-        "content": user_message
-    })
+        # 3. 添加歷史記錄（限制在最近 5 輪對話）
+        if history:
+            recent_history = history[-10:]  # 5 輪 = 10 條訊息（user + assistant）
+            for msg in recent_history:
+                if msg.get('role') in ['user', 'assistant']:
+                    messages.append({
+                        "role": msg['role'],
+                        "content": msg['content']
+                    })
 
-    try:
-        print_log("🤖", f"呼叫 Ollama ({MODEL})...", "yellow")
+        # 4. 添加當前使用者訊息
+        messages.append({
+            "role": "user",
+            "content": user_message
+        })
 
-        # Call Ollama - no streaming for simplicity (Linus: start simple)
+        # 5. 呼叫 Ollama API
+        print_log("📤", f"Sending to Ollama: {len(messages)} messages", "yellow")
+
         response = ollama.client.chat(
             model=MODEL,
             messages=messages,
@@ -401,25 +470,34 @@ def chat():
         )
 
         assistant_message = response['message']['content']
-        print_log("✅", f"回應生成成功 ({len(assistant_message)} 字元)", "green")
+        print_log("✅", f"Ollama response received: {len(assistant_message)} chars", "green")
         print_log("💬", "=" * 70, "cyan")
         print()
 
         return jsonify({
-            "success": True,
-            "message": assistant_message
+            'success': True,
+            'message': assistant_message
         })
 
-    except Exception as e:
-        print_log("❌", f"錯誤: {str(e)}", "red")
+    except requests.exceptions.Timeout:
+        print_log("⏱️", "Ollama request timeout", "red")
         print_log("💬", "=" * 70, "cyan")
         print()
-
-        # Fallback response - always have a backup (Linus: never fail silently)
         return jsonify({
-            "success": False,
-            "message": "抱歉，AI 服務暫時無法使用。請稍後再試或聯絡圖書館管理員。"
-        }), 503
+            'success': False,
+            'message': 'AI 服務響應超時，請稍後再試'
+        }), 504
+
+    except Exception as e:
+        print_log("❌", f"Chat error: {str(e)}", "red")
+        import traceback
+        traceback.print_exc()
+        print_log("💬", "=" * 70, "cyan")
+        print()
+        return jsonify({
+            'success': False,
+            'message': f'處理請求時發生錯誤: {str(e)}'
+        }), 500
 
 
 if __name__ == '__main__':
