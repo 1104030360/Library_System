@@ -22,4 +22,25 @@ public class QuestionClassifier {
         // Temporarily return GENERAL_CHAT
         return Collections.singleton(QuestionType.GENERAL_CHAT);
     }
+
+    /**
+     * 從訊息中提取書名
+     * 簡單實作：提取《》中的內容
+     */
+    public String extractBookTitle(String message) {
+        if (message == null || message.isEmpty()) {
+            return null;
+        }
+
+        // 查找《》符號
+        int start = message.indexOf("《");
+        int end = message.indexOf("》");
+
+        if (start != -1 && end != -1 && end > start) {
+            return message.substring(start + 1, end);
+        }
+
+        // 如果沒有《》，返回 null
+        return null;
+    }
 }
