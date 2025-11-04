@@ -9,6 +9,15 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Library API Server - Stage 5
@@ -2265,11 +2274,59 @@ public class LibraryApiServer {
         }
     }
 
+    // ===== Chat Request/Response Classes =====
+
+    static class ChatMessage {
+        public String role;
+        public String content;
+
+        public ChatMessage(String role, String content) {
+            this.role = role;
+            this.content = content;
+        }
+    }
+
+    static class ChatRequest {
+        public String message;
+        public List<ChatMessage> history;
+
+        public ChatRequest(String message, List<ChatMessage> history) {
+            this.message = message;
+            this.history = history;
+        }
+    }
+
     /**
      * Handler for /api/chat
-     * Simple chatbot endpoint - Linus style: just forward to AI service
+     * ChatHandler - 處理 /api/chat 端點（已升級支援 RAG）
      */
     static class ChatHandler implements HttpHandler {
+
+        private final BookDatabaseRepository bookRepo;
+        private final UserDatabaseRepository userRepo;
+        private final BorrowHistoryRepository borrowHistoryRepo;
+        private final LibraryRulesRepository rulesRepo;
+        private final QuestionClassifier questionClassifier;
+        private final ContextRetriever contextRetriever;
+
+        public ChatHandler() {
+            // 初始化所有 repository
+            this.bookRepo = repository;
+            this.userRepo = userRepository;
+            this.borrowHistoryRepo = historyRepository;
+
+            // 初始化圖書館規則repository
+            this.rulesRepo = new LibraryRulesRepository();
+
+            // 初始化 RAG 組件
+            this.questionClassifier = new QuestionClassifier();
+            this.contextRetriever = new ContextRetriever(
+                borrowHistoryRepo,
+                bookRepo,
+                rulesRepo
+            );
+        }
+
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             // CORS preflight
@@ -2284,84 +2341,259 @@ public class LibraryApiServer {
                 return;
             }
 
+            // 1. 驗證 session
+            String sessionId = getSessionIdFromCookie(exchange);
+            ApiSessionManager.SessionData session = ApiSessionManager.validateSession(sessionId);
+
+            if (session == null) {
+                ChatResponse errorResponse = new ChatResponse(
+                    false,
+                    "請先登入"
+                );
+                sendResponse(exchange, 401, "application/json", gson.toJson(errorResponse));
+                return;
+            }
+
+            // 2. 解析請求
+            String requestBody = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+            ChatRequest request = gson.fromJson(requestBody, ChatRequest.class);
+
+            String userMessage = request.message;
+            String userId = session.username;
+
+            System.out.println("📩 [ChatHandler] User: " + userId + " | Message: " + userMessage);
+
             try {
-                // Read request body
-                String requestBody = new String(
-                    exchange.getRequestBody().readAllBytes(),
-                    java.nio.charset.StandardCharsets.UTF_8
+                // 3. RAG 流程：分類問題
+                Set<QuestionClassifier.QuestionType> questionTypes =
+                    questionClassifier.classify(userMessage);
+
+                System.out.println("🏷️  [ChatHandler] Question types: " + questionTypes);
+
+                // 4. RAG 流程：檢索資料
+                ChatContext context = contextRetriever.retrieveContext(
+                    userId,
+                    userMessage,
+                    questionTypes
                 );
 
-                System.out.println("📨 Received chat request");
-
-                // Forward to AI service - simple and direct (Linus: no fancy abstractions)
-                // Support both Docker (AI_SERVICE_URL env var) and local development (localhost:8888)
-                String aiServiceUrl = System.getenv("AI_SERVICE_URL");
-                if (aiServiceUrl == null || aiServiceUrl.isEmpty()) {
-                    aiServiceUrl = "http://localhost:8888";
-                }
-                java.net.URL url = new java.net.URL(aiServiceUrl + "/chat");
-                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setDoOutput(true);
-                conn.setConnectTimeout(5000); // 5 seconds
-                conn.setReadTimeout(30000);   // 30 seconds for AI response
-
-                // Send request
-                try (java.io.OutputStream os = conn.getOutputStream()) {
-                    os.write(requestBody.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                    os.flush();
+                System.out.println("📊 [ChatHandler] Context retrieved: hasData=" + !context.isEmpty());
+                if (!context.isEmpty()) {
+                    System.out.println("    " + context.getSummary());
                 }
 
-                // Read response
-                int status = conn.getResponseCode();
-                String responseBody;
+                // 5. 將 ChatContext 轉換為 JSON
+                String contextJson = convertContextToJson(context);
 
-                if (status == 200) {
-                    responseBody = new String(
-                        conn.getInputStream().readAllBytes(),
-                        java.nio.charset.StandardCharsets.UTF_8
-                    );
-                    System.out.println("✅ Chat response received");
-                } else {
-                    // AI service error
-                    responseBody = new String(
-                        conn.getErrorStream().readAllBytes(),
-                        java.nio.charset.StandardCharsets.UTF_8
-                    );
-                    System.err.println("⚠️  AI service returned status: " + status);
-                }
-
-                conn.disconnect();
-                sendResponse(exchange, status, "application/json", responseBody);
-
-            } catch (java.net.ConnectException e) {
-                // AI service not running
-                System.err.println("❌ AI service not available: " + e.getMessage());
-                ChatResponse fallback = new ChatResponse(
-                    false,
-                    "抱歉，AI 服務目前無法使用。請稍後再試或聯絡圖書館管理員。"
+                // 6. 呼叫 Python AI Service（使用 RAG）
+                String aiResponse = callAiServiceWithContext(
+                    userMessage,
+                    request.history,
+                    contextJson
                 );
-                sendResponse(exchange, 503, "application/json", gson.toJson(fallback));
 
-            } catch (java.net.SocketTimeoutException e) {
-                // Timeout
-                System.err.println("⏱️  AI service timeout: " + e.getMessage());
-                ChatResponse fallback = new ChatResponse(
-                    false,
-                    "AI 回應超時。請稍後再試。"
-                );
-                sendResponse(exchange, 504, "application/json", gson.toJson(fallback));
+                // 7. 返回回應
+                ChatResponse response = new ChatResponse(true, aiResponse);
+                sendResponse(exchange, 200, "application/json", gson.toJson(response));
 
             } catch (Exception e) {
-                // Other errors
-                System.err.println("💥 Chat error: " + e.getMessage());
+                System.err.println("❌ [ChatHandler] Error: " + e.getMessage());
                 e.printStackTrace();
-                ChatResponse fallback = new ChatResponse(
-                    false,
-                    "發生錯誤：" + e.getMessage()
-                );
-                sendResponse(exchange, 500, "application/json", gson.toJson(fallback));
+
+                // 降級處理：不使用 RAG，直接呼叫 AI
+                try {
+                    String fallbackResponse = callAiServiceWithoutContext(
+                        userMessage,
+                        request.history
+                    );
+                    ChatResponse response = new ChatResponse(true, fallbackResponse);
+                    sendResponse(exchange, 200, "application/json", gson.toJson(response));
+                } catch (Exception fallbackError) {
+                    ChatResponse errorResponse = new ChatResponse(
+                        false,
+                        "AI 服務暫時無法使用，請稍後再試"
+                    );
+                    sendResponse(exchange, 500, "application/json", gson.toJson(errorResponse));
+                }
+            }
+        }
+
+        /**
+         * 將 ChatContext 轉換為 JSON 字串
+         */
+        private String convertContextToJson(ChatContext context) {
+            Map<String, Object> contextMap = new HashMap<>();
+
+            // hasData 標誌
+            contextMap.put("hasData", !context.isEmpty());
+
+            // 借閱歷史
+            if (context.getBorrowHistory() != null && !context.getBorrowHistory().isEmpty()) {
+                List<Map<String, Object>> historyList = new ArrayList<>();
+                for (BorrowHistory record : context.getBorrowHistory()) {
+                    Map<String, Object> recordMap = new HashMap<>();
+                    recordMap.put("bookId", record.getBookId());
+                    recordMap.put("bookTitle", record.getBookTitle());
+                    recordMap.put("borrowDate", record.getBorrowDate());
+                    recordMap.put("returnDate", record.getReturnDate() != null ?
+                        record.getReturnDate() : "未歸還");
+                    recordMap.put("status", record.getStatus());
+                    historyList.add(recordMap);
+                }
+                contextMap.put("borrowHistory", historyList);
+            }
+
+            // 可借閱書籍
+            if (context.getAvailableBooks() != null && !context.getAvailableBooks().isEmpty()) {
+                List<Map<String, Object>> booksList = new ArrayList<>();
+                for (BookInfo book : context.getAvailableBooks()) {
+                    Map<String, Object> bookMap = new HashMap<>();
+                    bookMap.put("id", book.getId());
+                    bookMap.put("title", book.getTitle());
+                    bookMap.put("author", book.getAuthor());
+                    bookMap.put("publisher", book.getPublisher());
+                    bookMap.put("description", book.getDescription() != null ?
+                        book.getDescription() : "");
+                    booksList.add(bookMap);
+                }
+                contextMap.put("availableBooks", booksList);
+            }
+
+            // 圖書館規則
+            if (context.getLibraryRules() != null && !context.getLibraryRules().isEmpty()) {
+                List<Map<String, Object>> rulesList = new ArrayList<>();
+                for (LibraryRulesRepository.LibraryRule rule : context.getLibraryRules()) {
+                    Map<String, Object> ruleMap = new HashMap<>();
+                    ruleMap.put("category", rule.category);
+                    ruleMap.put("question", rule.question);
+                    ruleMap.put("answer", rule.answer);
+                    rulesList.add(ruleMap);
+                }
+                contextMap.put("libraryRules", rulesList);
+            }
+
+            // 統計資訊
+            if (context.getStats() != null) {
+                Map<String, Integer> statsMap = new HashMap<>();
+                statsMap.put("totalBooks", context.getStats().totalBooks);
+                statsMap.put("availableBooks", context.getStats().availableBooks);
+                statsMap.put("borrowedBooks", context.getStats().borrowedBooks);
+                contextMap.put("stats", statsMap);
+            }
+
+            return gson.toJson(contextMap);
+        }
+
+        /**
+         * 呼叫 AI Service（使用 RAG context）
+         */
+        private String callAiServiceWithContext(String message,
+                                               List<ChatMessage> history,
+                                               String contextJson) throws Exception {
+            // Support both Docker (AI_SERVICE_URL env var) and local development
+            String aiServiceUrl = System.getenv("AI_SERVICE_URL");
+            if (aiServiceUrl == null || aiServiceUrl.isEmpty()) {
+                aiServiceUrl = "http://localhost:8888";
+            }
+            String url = aiServiceUrl + "/chat";
+
+            // 構建請求 body（包含 context）
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("message", message);
+            requestBody.put("history", history);
+            requestBody.put("context", contextJson);  // 新增 context 參數
+
+            String requestJson = gson.toJson(requestBody);
+
+            // 發送 HTTP POST 請求
+            HttpURLConnection conn = (HttpURLConnection)
+                new URL(url).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(30000);
+            conn.setReadTimeout(30000);
+
+            // 寫入請求
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(requestJson.getBytes(StandardCharsets.UTF_8));
+            }
+
+            // 讀取回應
+            int responseCode = conn.getResponseCode();
+            if (responseCode == 200) {
+                try (BufferedReader br = new BufferedReader(
+                        new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+
+                    // 解析回應
+                    Map<String, Object> responseMap = gson.fromJson(
+                        response.toString(),
+                        new TypeToken<Map<String, Object>>(){}.getType()
+                    );
+
+                    return (String) responseMap.get("message");
+                }
+            } else {
+                throw new Exception("AI Service returned error: " + responseCode);
+            }
+        }
+
+        /**
+         * 呼叫 AI Service（不使用 RAG，降級處理）
+         */
+        private String callAiServiceWithoutContext(String message,
+                                                  List<ChatMessage> history) throws Exception {
+            // Support both Docker (AI_SERVICE_URL env var) and local development
+            String aiServiceUrl = System.getenv("AI_SERVICE_URL");
+            if (aiServiceUrl == null || aiServiceUrl.isEmpty()) {
+                aiServiceUrl = "http://localhost:8888";
+            }
+            String url = aiServiceUrl + "/chat";
+
+            // 構建請求 body（不包含 context）
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("message", message);
+            requestBody.put("history", history);
+
+            String requestJson = gson.toJson(requestBody);
+
+            // 發送 HTTP POST 請求（同上）
+            HttpURLConnection conn = (HttpURLConnection)
+                new URL(url).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(30000);
+            conn.setReadTimeout(30000);
+
+            try (OutputStream os = conn.getOutputStream()) {
+                os.write(requestJson.getBytes(StandardCharsets.UTF_8));
+            }
+
+            int responseCode = conn.getResponseCode();
+            if (responseCode == 200) {
+                try (BufferedReader br = new BufferedReader(
+                        new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        response.append(line);
+                    }
+
+                    Map<String, Object> responseMap = gson.fromJson(
+                        response.toString(),
+                        new TypeToken<Map<String, Object>>(){}.getType()
+                    );
+
+                    return (String) responseMap.get("message");
+                }
+            } else {
+                throw new Exception("AI Service returned error: " + responseCode);
             }
         }
     }
