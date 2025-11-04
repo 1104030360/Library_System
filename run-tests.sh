@@ -31,7 +31,34 @@ mkdir -p test/bin
 
 echo ""
 echo "========================================="
-echo "  PHASE 1: Repository Tests"
+echo "  PHASE 1: Model Tests"
+echo "========================================="
+echo ""
+
+# Compile BookInfo test
+echo "📦 Compiling BookInfo model test..."
+javac -d test/bin \
+    -cp "lib/*:backend/bin" \
+    test/model/BookInfoTest.java
+
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Compilation failed for BookInfo test${NC}"
+    exit 1
+fi
+
+# Run model tests
+echo ""
+echo "🧪 Running BookInfo tests..."
+java -jar lib/junit-platform-console-standalone-1.10.1.jar \
+    --class-path "lib/*:backend/bin:test/bin" \
+    --scan-class-path \
+    --include-classname "BookInfoTest"
+
+MODEL_TEST_RESULT=$?
+
+echo ""
+echo "========================================="
+echo "  PHASE 2: Repository Tests"
 echo "========================================="
 echo ""
 
@@ -58,7 +85,7 @@ REPO_TEST_RESULT=$?
 
 echo ""
 echo "========================================="
-echo "  PHASE 2: Authentication Tests"
+echo "  PHASE 3: Authentication Tests"
 echo "========================================="
 echo ""
 
@@ -85,7 +112,7 @@ AUTH_TEST_RESULT=$?
 
 echo ""
 echo "========================================="
-echo "  PHASE 3: API Integration Tests"
+echo "  PHASE 4: API Integration Tests"
 echo "========================================="
 echo ""
 
@@ -128,6 +155,12 @@ echo "========================================="
 echo ""
 
 # Report results
+if [ $MODEL_TEST_RESULT -eq 0 ]; then
+    echo -e "${GREEN}✅ Model Tests: PASSED${NC}"
+else
+    echo -e "${RED}❌ Model Tests: FAILED${NC}"
+fi
+
 if [ $REPO_TEST_RESULT -eq 0 ]; then
     echo -e "${GREEN}✅ Repository Tests: PASSED${NC}"
 else
@@ -151,7 +184,7 @@ fi
 echo ""
 
 # Overall result
-TOTAL_FAILURES=$((REPO_TEST_RESULT + AUTH_TEST_RESULT + API_TEST_RESULT))
+TOTAL_FAILURES=$((MODEL_TEST_RESULT + REPO_TEST_RESULT + AUTH_TEST_RESULT + API_TEST_RESULT))
 
 if [ $TOTAL_FAILURES -eq 0 ]; then
     echo -e "${GREEN}🎉 ALL TESTS PASSED!${NC}"

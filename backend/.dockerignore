@@ -1,0 +1,10 @@
+bin
+*.class
+.git
+.gitignore
+*.md
+README.md
+.DS_Store
+*.db
+*.db-journal
+data/

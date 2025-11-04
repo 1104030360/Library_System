@@ -3,10 +3,17 @@ public class BookInfo {
     private final String title;
     private final String author;
     private final String publisher;
+    private final String description;
     private boolean isAvailable;
 
-    // Constructor - all fields are required
-    public BookInfo(String id, String title, String author, String publisher) {
+    // 統計數據欄位 (Phase 12 Enhancement)
+    public int borrowCount;        // 借閱次數
+    public double averageRating;   // 平均評分
+    public int reviewCount;        // 評論數量
+
+    // Constructor with all fields including statistics (new)
+    public BookInfo(String id, String title, String author, String publisher, String description,
+                    int borrowCount, double averageRating, int reviewCount) {
         if (id == null || title == null || author == null || publisher == null) {
             throw new IllegalArgumentException("All book fields must be non-null");
         }
@@ -14,7 +21,21 @@ public class BookInfo {
         this.title = title;
         this.author = author;
         this.publisher = publisher;
+        this.description = description != null ? description : "";
         this.isAvailable = true;
+        this.borrowCount = borrowCount;
+        this.averageRating = averageRating;
+        this.reviewCount = reviewCount;
+    }
+
+    // Constructor with description (backward compatibility)
+    public BookInfo(String id, String title, String author, String publisher, String description) {
+        this(id, title, author, publisher, description, 0, 0.0, 0);
+    }
+
+    // Constructor without description (backward compatibility)
+    public BookInfo(String id, String title, String author, String publisher) {
+        this(id, title, author, publisher, "", 0, 0.0, 0);
     }
 
     // Getters
@@ -34,8 +55,24 @@ public class BookInfo {
         return publisher;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
     public boolean isAvailable() {
         return isAvailable;
+    }
+
+    public int getBorrowCount() {
+        return borrowCount;
+    }
+
+    public double getAverageRating() {
+        return averageRating;
+    }
+
+    public int getReviewCount() {
+        return reviewCount;
     }
 
     // State management methods
@@ -59,6 +96,7 @@ public class BookInfo {
                 ", title='" + title + '\'' +
                 ", author='" + author + '\'' +
                 ", publisher='" + publisher + '\'' +
+                ", description='" + description + '\'' +
                 ", isAvailable=" + isAvailable +
                 '}';
     }

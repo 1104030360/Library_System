@@ -1,0 +1,271 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 全域樣式 - 流動背景設計 */
+body {
+  margin: 0;
+  background-color: whitesmoke;
+  color: #1e293b;
+  font-family: -apple-system, system-ui, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-weight: 600;
+}
+
+/* 透明深色文字效果（按照教程）- 只應用於主標題 */
+.text-overlay {
+  opacity: 0.8;
+  mix-blend-mode: overlay;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* 簡約的過渡效果 */
+.transition-smooth {
+  transition: all 0.2s ease-in-out;
+}
+
+/* 自訂捲軸 */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ========================================
+   2025 Glassmorphism & Liquid Glass 增強樣式
+   根據最新設計趨勢美化表單和按鈕
+   ======================================== */
+
+/* 增強卡片的玻璃效果 - Liquid Glass */
+.n-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow:
+    0 8px 32px 0 rgba(31, 38, 135, 0.15),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.n-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 48px 0 rgba(31, 38, 135, 0.2),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 增強輸入框的玻璃效果 */
+.n-input {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.n-input:hover {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(42, 201, 222, 0.3) !important;
+}
+
+.n-input.n-input--focus,
+.n-input:focus-within {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(42, 201, 222, 0.5) !important;
+  box-shadow:
+    0 0 0 3px rgba(42, 201, 222, 0.1),
+    0 4px 12px rgba(42, 201, 222, 0.15) !important;
+  transform: translateY(-1px);
+}
+
+/* 美化主按鈕 - 蘋果系統藍色 (iOS System Blue) */
+.n-button--primary-type {
+  background: #007AFF !important;
+  border: none !important;
+  box-shadow:
+    0 2px 8px rgba(0, 122, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.2s ease-out !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.n-button--primary-type:hover {
+  background: #0051D5 !important;
+  box-shadow:
+    0 3px 12px rgba(0, 122, 255, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+  transform: translateY(-1px);
+}
+
+.n-button--primary-type:active {
+  transform: translateY(0);
+  background: #0040A8 !important;
+  box-shadow:
+    0 1px 4px rgba(0, 122, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 美化次要按鈕 */
+.n-button--default-type {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.n-button--default-type:hover {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  transform: translateY(-1px);
+}
+
+.n-button--default-type:active {
+  transform: translateY(0);
+}
+
+/* 美化下拉選擇器 */
+.n-select {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+.n-base-selection {
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.n-base-selection:hover {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border-color: rgba(42, 201, 222, 0.3) !important;
+}
+
+.n-base-selection.n-base-selection--focus {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(42, 201, 222, 0.5) !important;
+  box-shadow:
+    0 0 0 3px rgba(42, 201, 222, 0.1),
+    0 4px 12px rgba(42, 201, 222, 0.15) !important;
+}
+
+/* 美化標籤 Tag */
+.n-tag {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+.n-tag--success-type {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.3)) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+.n-tag--warning-type {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.3)) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+
+/* 美化頭部導航 - 移除 hover 效果 */
+header.bg-white\/90 {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.06),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.5) !important;
+  /* 移除所有 hover 和 transition 效果 */
+  transition: none !important;
+}
+
+header.bg-white\/90:hover {
+  transform: none !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.06),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 美化書籍卡片 */
+.bg-white\/90.backdrop-blur-xl {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow:
+    0 8px 32px 0 rgba(31, 38, 135, 0.12),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.bg-white\/90.backdrop-blur-xl:hover {
+  background: rgba(255, 255, 255, 0.85) !important;
+  transform: translateY(-4px) scale(1.01);
+  box-shadow:
+    0 16px 48px 0 rgba(31, 38, 135, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 簡約的頂部高光 - 蘋果風格 */
+.n-button--primary-type::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.15),
+    transparent
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* 美化下拉菜單 */
+.n-base-select-menu {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12) !important;
+}
+
+.n-base-select-option:hover {
+  background: rgba(42, 201, 222, 0.1) !important;
+}
+
+/* 確保所有過渡效果流暢 */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

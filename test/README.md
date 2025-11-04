@@ -11,12 +11,14 @@
 
 ```
 test/
+├── model/                # Model/Domain object tests
+│   └── BookInfoTest.java
 ├── repository/           # Database layer tests
 │   └── BookDatabaseRepositoryTest.java
-├── api/                  # API integration tests
-│   └── LibraryApiIntegrationTest.java
-└── auth/                 # Authentication tests
-    └── AuthenticationTest.java
+├── auth/                 # Authentication tests
+│   └── AuthenticationTest.java
+└── api/                  # API integration tests
+    └── LibraryApiIntegrationTest.java
 ```
 
 ---
@@ -37,6 +39,16 @@ This will:
 5. Show summary
 
 ### Option 2: Run Individual Test Suites
+
+**Model Tests** (BookInfo object):
+```bash
+javac -d test/bin -cp "lib/*:backend/bin" test/model/BookInfoTest.java
+
+java -jar lib/junit-platform-console-standalone-1.10.1.jar \
+    --class-path "lib/*:backend/bin:test/bin" \
+    --scan-class-path \
+    --include-classname "BookInfoTest"
+```
 
 **Repository Tests** (Database operations):
 ```bash
@@ -76,7 +88,32 @@ java -jar lib/junit-platform-console-standalone-1.10.1.jar \
 
 ## 📝 Test Coverage
 
-### 1. BookDatabaseRepositoryTest (10 tests)
+### 1. BookInfoTest (14 tests)
+Tests the core domain model - object creation, state management, and validation.
+
+**What it tests**:
+- ✅ Constructor with description (new field)
+- ✅ Constructor without description (backward compatibility)
+- ✅ Null validation (IllegalArgumentException)
+- ✅ Mark as borrowed state change
+- ✅ Mark as returned state change
+- ✅ Multiple borrow/return cycles
+- ✅ Equality based on ID
+- ✅ HashCode consistency
+- ✅ Display string format
+- ✅ ToString format
+- ✅ Immutability of core fields
+- ✅ Empty string fields handling
+- ✅ Description with special characters
+- ✅ Very long description handling
+
+**Why these tests**:
+- BookInfo is a core domain object used throughout the system
+- Tests ensure data validation and state management work correctly
+- Equality and hashCode are critical for collections (HashMap, HashSet)
+- Edge cases prevent runtime errors with malformed data
+
+### 2. BookDatabaseRepositoryTest (10 tests)
 Tests the database layer - CRUD operations, persistence, data integrity.
 
 **What it tests**:
@@ -96,7 +133,7 @@ Tests the database layer - CRUD operations, persistence, data integrity.
 - Test data integrity (no duplicates, proper updates)
 - Verify persistence across "restarts"
 
-### 2. AuthenticationTest (10 tests)
+### 3. AuthenticationTest (10 tests)
 Tests the authentication and session management system.
 
 **What it tests**:
@@ -116,7 +153,7 @@ Tests the authentication and session management system.
 - Session management is core functionality
 - Edge cases prevent crashes
 
-### 3. LibraryApiIntegrationTest (10 tests)
+### 4. LibraryApiIntegrationTest (10 tests)
 Tests the entire API stack - HTTP requests to responses.
 
 **What it tests**:
@@ -158,6 +195,7 @@ Tests the entire API stack - HTTP requests to responses.
 
 ### All Tests Pass
 ```
+✅ Model Tests: PASSED
 ✅ Repository Tests: PASSED
 ✅ Authentication Tests: PASSED
 ✅ API Integration Tests: PASSED

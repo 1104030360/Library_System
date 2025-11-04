@@ -67,3 +67,23 @@ data/library.db-journal
 
 # AI-generated context files
 GEMINI.md
+
+# Documentation and project management files (keep code only, except README.md)
+docs/
+schedule/
+dev-prompts/
+ref/
+
+# All markdown files except README
+*.md
+!README.md
+!web/README.md
+!legacy/README.md
+!test/README.md
+*.mdc
+
+# Environment variables
+.env
+backend/ai_service/.env
+*.env
+!.env_example
