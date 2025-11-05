@@ -971,17 +971,23 @@ public class LibraryApiServer {
     private static String getSessionIdFromCookie(HttpExchange exchange) {
         String cookieHeader = exchange.getRequestHeaders().getFirst("Cookie");
         if (cookieHeader == null) {
+            System.err.println("⚠️ No Cookie header found in request");
             return null;
         }
+
+        System.out.println("🍪 Cookie header: " + cookieHeader);
 
         // Parse cookie header: "sessionId=xxx; other=yyy"
         String[] cookies = cookieHeader.split(";");
         for (String cookie : cookies) {
             String[] parts = cookie.trim().split("=");
             if (parts.length == 2 && parts[0].equals("sessionId")) {
+                System.out.println("✅ Found sessionId in cookie: " + parts[1]);
                 return parts[1];
             }
         }
+        
+        System.err.println("⚠️ sessionId not found in Cookie header");
         return null;
     }
 
@@ -2090,13 +2096,21 @@ public class LibraryApiServer {
 
             // Get current user from session
             String sessionId = getSessionIdFromCookie(exchange);
+            
+            // Debug logging
+            System.out.println("🔍 Personal recommendations request received");
+            System.out.println("   - Session ID from cookie: " + (sessionId != null ? sessionId : "null"));
+            
             ApiSessionManager.SessionData session = ApiSessionManager.validateSession(sessionId);
 
             if (session == null) {
+                System.err.println("❌ Session validation failed - returning 401");
                 String response = gson.toJson(new ErrorResponse("Authentication required"));
                 sendResponse(exchange, 401, "application/json", response);
                 return;
             }
+            
+            System.out.println("✅ Session validated for user: " + session.username);
 
             try {
                 String userId = session.username;
@@ -2114,7 +2128,7 @@ public class LibraryApiServer {
                 // Process recommendations asynchronously
                 java.util.concurrent.CompletableFuture.runAsync(() -> {
                     try {
-                        // Get user's borrow history
+                        // Get user's borrow history (all records, for preference learning)
                         List<BorrowHistory> history = historyRepository.getUserHistory(userId);
                         List<BookInfo> borrowHistory = new ArrayList<>();
                         for (BorrowHistory h : history) {
@@ -2124,21 +2138,28 @@ public class LibraryApiServer {
                             }
                         }
 
-                        // Get available books
+                        // Get currently borrowed books (to exclude from recommendations)
+                        List<BorrowHistory> currentBorrowings = historyRepository.getCurrentBorrowings(userId);
+                        List<String> currentlyBorrowedIds = new ArrayList<>();
+                        for (BorrowHistory b : currentBorrowings) {
+                            currentlyBorrowedIds.add(b.getBookId());
+                        }
+
+                        // Get available books (excluding currently borrowed ones)
                         List<BookInfo> allBooks = repository.getAllBooks();
                         List<BookInfo> availableBooks = new ArrayList<>();
                         for (BookInfo book : allBooks) {
-                            boolean alreadyBorrowed = false;
-                            for (BookInfo borrowed : borrowHistory) {
-                                if (borrowed.getId().equals(book.getId())) {
-                                    alreadyBorrowed = true;
-                                    break;
-                                }
-                            }
-                            if (!alreadyBorrowed && book.isAvailable()) {
+                            // Only exclude books that are currently borrowed by this user
+                            boolean currentlyBorrowed = currentlyBorrowedIds.contains(book.getId());
+                            if (!currentlyBorrowed && book.isAvailable()) {
                                 availableBooks.add(book);
                             }
                         }
+
+                        System.out.println("📊 Recommendation context for user " + userId + ":");
+                        System.out.println("   - Borrow history: " + borrowHistory.size() + " books");
+                        System.out.println("   - Currently borrowed: " + currentlyBorrowedIds.size() + " books");
+                        System.out.println("   - Available for recommendation: " + availableBooks.size() + " books");
 
                         // Generate recommendations asynchronously
                         recommendationService.getPersonalRecommendationsAsync(userId, borrowHistory, availableBooks)

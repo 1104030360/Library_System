@@ -48,8 +48,8 @@ export const bookApi = {
 
   // 取得特定書籍
   async getBookById(id: string): Promise<Book> {
-    const response = await api.get<Book>(`/books?id=${id}`)
-    return response.data
+    const response = await api.get<{ success: boolean; message: string; book: Book }>(`/books?id=${id}`)
+    return response.data.book
   },
 
   // 借書
