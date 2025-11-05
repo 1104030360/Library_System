@@ -220,6 +220,14 @@ public class LibraryApiIntegrationTest {
         HttpURLConnection conn = makeRequest("POST", "/api/books/return", returnData, null);
         assertEquals(401, conn.getResponseCode());
 
+        // Try returning with a different logged-in user - should fail (permission denied)
+        String otherSession = loginAndGetSession("1001", "1234");
+        conn = makeRequest("POST", "/api/books/return", returnData, otherSession);
+        assertEquals(403, conn.getResponseCode(), "Different user should not be allowed to return someone else's book");
+
+        // Cleanup: logout secondary session
+        makeRequest("POST", "/api/auth/logout", null, otherSession);
+
         // Return with login - should work
         conn = makeRequest("POST", "/api/books/return", returnData, sessionCookie);
         assertEquals(200, conn.getResponseCode());
@@ -336,7 +344,29 @@ public class LibraryApiIntegrationTest {
             while ((line = reader.readLine()) != null) {
                 response.append(line);
             }
-            return response.toString();
+        return response.toString();
         }
+    }
+
+    /**
+     * Login helper that returns session cookie string
+     */
+    private String loginAndGetSession(String username, String password) throws IOException {
+        String payload = String.format("{\"username\":\"%s\",\"password\":%s}", username, password);
+        HttpURLConnection conn = makeRequest("POST", "/api/auth/login", payload, null);
+        assertEquals(200, conn.getResponseCode(), "Login should succeed for helper");
+
+        Map<String, List<String>> headers = conn.getHeaderFields();
+        List<String> cookies = headers.get("Set-Cookie");
+        assertNotNull(cookies, "Login response should contain Set-Cookie header");
+
+        for (String cookie : cookies) {
+            if (cookie.startsWith("sessionId=")) {
+                return cookie.split(";")[0];
+            }
+        }
+
+        fail("No sessionId cookie returned after login");
+        return null; // Unreachable
     }
 }

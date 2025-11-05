@@ -1,28 +1,147 @@
-version: '3.8'
-
 services:
-  library-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: library-api-server
+  # ========================================
+  # 1. Ollama Base Service (LLM Model)
+  # ========================================
+  ollama-base:
+    image: ollama/ollama:latest
+    container_name: library-ollama-base
     ports:
-      - "7070:7070"
+      - "11434:11434"
     volumes:
-      # Mount data directory for SQLite persistence
-      - ./data:/app/data
+      # Mount local Ollama model directory (Important: avoid model loss on container deletion)
+      # Mac/Linux: ~/.ollama
+      # Windows: %USERPROFILE%\.ollama
+      - ~/.ollama:/root/.ollama
     environment:
-      - JAVA_OPTS=-Xmx512m -Xms256m
+      - OLLAMA_HOST=0.0.0.0
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7070/api/status"]
+      test: ["CMD", "ollama", "list"]
       interval: 30s
-      timeout: 3s
+      timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 60s  # Ollama starts slowly, give it enough time
+    networks:
+      - library-network
+    # GPU support (optional, if you have NVIDIA GPU)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ========================================
+  # 2. AI Recommendation Service (Python Flask)
+  # ========================================
+  ai-service:
+    build:
+      context: ./backend/ai_service
+      dockerfile: Dockerfile
+    container_name: library-ai-service
+    ports:
+      - "8888:8888"
+    volumes:
+      # Hot reload: mount source code for development
+      - ./backend/ai_service:/app
+    env_file:
+      # Load environment variables from .env file
+      - ./backend/ai_service/.env
+    # environment:
+      # 註解掉以使用 env_file（./backend/ai_service/.env）中的配置
+      # 這樣可以靈活切換本地/雲端 Ollama
+      # - OLLAMA_URL=${OLLAMA_URL:-http://ollama-base:11434}
+      # - OLLAMA_API_KEY=${OLLAMA_API_KEY:-}
+      # - MODEL=${MODEL:-llama3.2:latest}
+      # - MAX_RETRIES=${MAX_RETRIES:-2}
+      # - RETRY_DELAY=${RETRY_DELAY:-1}
+      # - FLASK_ENV=${FLASK_ENV:-development}
+      # - FLASK_DEBUG=${FLASK_DEBUG:-1}
+    depends_on:
+      ollama-base:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     networks:
       - library-network
 
+  # ========================================
+  # 3. Backend Service (Java API Server)
+  # ========================================
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: library-backend
+    ports:
+      - "7070:7070"
+      - "7071:7071"  # WebSocket port for async recommendations
+    volumes:
+      # Persist database files
+      - ./data:/app/data
+      - ./backend/library.db:/app/library.db
+    environment:
+      - TZ=Asia/Taipei
+      - JAVA_OPTS=-Xmx512m -Xms256m
+      - AI_SERVICE_URL=http://ai-service:8888
+    depends_on:
+      ai-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7070/api/books"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - library-network
+
+  # ========================================
+  # 4. Frontend Service (Vue 3 + Nginx)
+  # ========================================
+  frontend:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: library-frontend
+    ports:
+      - "7777:7777"
+      # - "443:443"  # 暫時註解 HTTPS 端口
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:7777/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - library-network
+
+# ========================================
+# Network Configuration
+# ========================================
 networks:
   library-network:
     driver: bridge
+
+# ========================================
+# Volume Configuration
+# ========================================
+volumes:
+  # Note: ollama-models changed to directly mount local ~/.ollama directory
+  # This way:
+  # 1. Use downloaded models (11 models, 33GB)
+  # 2. Models won't be lost after container deletion
+  # 3. Local and container share the same models
+  data:
+    driver: local

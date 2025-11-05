@@ -1,5 +1,6 @@
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
+import java.io.File;
 
 /**
  * Test Authentication System
@@ -11,6 +12,32 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class AuthenticationTest {
+
+    private static final String TEST_USER_DB = "data/test_users.db";
+    private static UserDatabaseRepository userRepository;
+
+    @BeforeAll
+    public static void setupAuthenticationRepo() {
+        File dbFile = new File(TEST_USER_DB);
+        if (dbFile.exists()) {
+            dbFile.delete();
+        }
+
+        userRepository = new UserDatabaseRepository(TEST_USER_DB);
+        userRepository.initialize();
+        ApiAuthenticationHelper.initialize(userRepository);
+    }
+
+    @AfterAll
+    public static void cleanupAuthenticationRepo() {
+        if (userRepository != null) {
+            // No explicit close method; just allow GC
+        }
+        File dbFile = new File(TEST_USER_DB);
+        if (dbFile.exists()) {
+            dbFile.delete();
+        }
+    }
 
     /**
      * Test 1: Valid authentication
@@ -24,15 +51,15 @@ public class AuthenticationTest {
 
         assertTrue(result.success, "Boss should authenticate successfully");
         assertEquals("0001", result.username);
-        assertEquals("Boss", result.userType);
-        assertEquals("Login successful", result.message);
+        assertEquals("館長", result.userType);
+        assertEquals("Authentication successful", result.message);
 
         // Employee account
         result = ApiAuthenticationHelper.authenticate("0002", 2222);
 
         assertTrue(result.success, "Employee should authenticate successfully");
         assertEquals("0002", result.username);
-        assertEquals("Employee", result.userType);
+        assertEquals("館員", result.userType);
     }
 
     /**
@@ -63,7 +90,7 @@ public class AuthenticationTest {
     @Test
     @Order(3)
     public void testSessionCreation() {
-        String sessionId = ApiSessionManager.createSession("0001", "Boss");
+        String sessionId = ApiSessionManager.createSession("0001", "館長");
 
         assertNotNull(sessionId, "Should create session ID");
         assertFalse(sessionId.isEmpty(), "Session ID should not be empty");
@@ -72,7 +99,7 @@ public class AuthenticationTest {
         ApiSessionManager.SessionData session = ApiSessionManager.validateSession(sessionId);
         assertNotNull(session, "Session should be valid");
         assertEquals("0001", session.username);
-        assertEquals("Boss", session.userType);
+        assertEquals("館長", session.userType);
     }
 
     /**
@@ -83,7 +110,7 @@ public class AuthenticationTest {
     @Order(4)
     public void testSessionValidation() {
         // Create valid session
-        String sessionId = ApiSessionManager.createSession("0002", "Employee");
+        String sessionId = ApiSessionManager.createSession("0002", "館員");
         ApiSessionManager.SessionData session = ApiSessionManager.validateSession(sessionId);
 
         assertNotNull(session, "Valid session should be found");
@@ -106,7 +133,7 @@ public class AuthenticationTest {
     @Order(5)
     public void testSessionDeletion() {
         // Create session
-        String sessionId = ApiSessionManager.createSession("0001", "Boss");
+        String sessionId = ApiSessionManager.createSession("0001", "館長");
         ApiSessionManager.SessionData session = ApiSessionManager.validateSession(sessionId);
         assertNotNull(session, "Session should exist before deletion");
 
@@ -126,8 +153,8 @@ public class AuthenticationTest {
     @Order(6)
     public void testMultipleSessions() {
         // Create multiple sessions
-        String session1 = ApiSessionManager.createSession("0001", "Boss");
-        String session2 = ApiSessionManager.createSession("0002", "Employee");
+        String session1 = ApiSessionManager.createSession("0001", "館長");
+        String session2 = ApiSessionManager.createSession("0002", "館員");
 
         assertNotEquals(session1, session2, "Different users should have different session IDs");
 
@@ -158,8 +185,8 @@ public class AuthenticationTest {
         int initialCount = ApiSessionManager.getActiveSessionCount();
 
         // Create sessions
-        String s1 = ApiSessionManager.createSession("0001", "Boss");
-        String s2 = ApiSessionManager.createSession("0002", "Employee");
+        String s1 = ApiSessionManager.createSession("0001", "館長");
+        String s2 = ApiSessionManager.createSession("0002", "館員");
 
         int countAfterCreation = ApiSessionManager.getActiveSessionCount();
         assertEquals(initialCount + 2, countAfterCreation, "Should have 2 more sessions");
@@ -204,8 +231,8 @@ public class AuthenticationTest {
     @Order(9)
     public void testSameUserMultipleLogins() {
         // Same user logs in twice
-        String session1 = ApiSessionManager.createSession("0001", "Boss");
-        String session2 = ApiSessionManager.createSession("0001", "Boss");
+        String session1 = ApiSessionManager.createSession("0001", "館長");
+        String session2 = ApiSessionManager.createSession("0001", "館長");
 
         // Should create different sessions
         assertNotEquals(session1, session2, "Each login should get unique session ID");
@@ -241,7 +268,7 @@ public class AuthenticationTest {
         ApiSessionManager.SessionData session = ApiSessionManager.validateSession(sessionId);
         assertNotNull(session);
         assertEquals("0001", session.username);
-        assertEquals("Boss", session.userType);
+        assertEquals("館長", session.userType);
 
         // Step 4: Use session multiple times
         for (int i = 0; i < 5; i++) {

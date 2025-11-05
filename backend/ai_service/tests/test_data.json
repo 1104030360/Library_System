@@ -1,0 +1,284 @@
+{
+  "comment": "測試數據文件 - 用於 Ollama AI Service 測試",
+
+  "sample_books": [
+    {
+      "id": "001",
+      "title": "深入理解計算機系統",
+      "author": "Randal E. Bryant",
+      "publisher": "機械工業出版社",
+      "category": "計算機科學"
+    },
+    {
+      "id": "002",
+      "title": "算法導論",
+      "author": "Thomas H. Cormen",
+      "publisher": "機械工業出版社",
+      "category": "計算機科學"
+    },
+    {
+      "id": "003",
+      "title": "設計模式：可復用面向對象軟件的基礎",
+      "author": "Erich Gamma",
+      "publisher": "機械工業出版社",
+      "category": "軟件工程"
+    },
+    {
+      "id": "004",
+      "title": "代碼整潔之道",
+      "author": "Robert C. Martin",
+      "publisher": "人民郵電出版社",
+      "category": "軟件工程"
+    },
+    {
+      "id": "005",
+      "title": "重構：改善既有代碼的設計",
+      "author": "Martin Fowler",
+      "publisher": "人民郵電出版社",
+      "category": "軟件工程"
+    },
+    {
+      "id": "006",
+      "title": "計算機網絡：自頂向下方法",
+      "author": "James F. Kurose",
+      "publisher": "機械工業出版社",
+      "category": "計算機網絡"
+    },
+    {
+      "id": "007",
+      "title": "操作系統概念",
+      "author": "Abraham Silberschatz",
+      "publisher": "高等教育出版社",
+      "category": "操作系統"
+    },
+    {
+      "id": "008",
+      "title": "數據庫系統概念",
+      "author": "Abraham Silberschatz",
+      "publisher": "機械工業出版社",
+      "category": "數據庫"
+    },
+    {
+      "id": "009",
+      "title": "編譯原理",
+      "author": "Alfred V. Aho",
+      "publisher": "機械工業出版社",
+      "category": "編譯原理"
+    },
+    {
+      "id": "010",
+      "title": "人工智能：一種現代方法",
+      "author": "Stuart Russell",
+      "publisher": "人民郵電出版社",
+      "category": "人工智能"
+    },
+    {
+      "id": "011",
+      "title": "紅樓夢",
+      "author": "曹雪芹",
+      "publisher": "人民文學出版社",
+      "category": "古典文學"
+    },
+    {
+      "id": "012",
+      "title": "三國演義",
+      "author": "羅貫中",
+      "publisher": "人民文學出版社",
+      "category": "古典文學"
+    },
+    {
+      "id": "013",
+      "title": "西遊記",
+      "author": "吳承恩",
+      "publisher": "人民文學出版社",
+      "category": "古典文學"
+    },
+    {
+      "id": "014",
+      "title": "水滸傳",
+      "author": "施耐庵",
+      "publisher": "人民文學出版社",
+      "category": "古典文學"
+    },
+    {
+      "id": "015",
+      "title": "管理學原理",
+      "author": "Stephen P. Robbins",
+      "publisher": "中國人民大學出版社",
+      "category": "管理學"
+    },
+    {
+      "id": "016",
+      "title": "經濟學原理",
+      "author": "N. Gregory Mankiw",
+      "publisher": "北京大學出版社",
+      "category": "經濟學"
+    },
+    {
+      "id": "017",
+      "title": "市場營銷學",
+      "author": "Philip Kotler",
+      "publisher": "中國人民大學出版社",
+      "category": "市場營銷"
+    },
+    {
+      "id": "018",
+      "title": "會計學原理",
+      "author": "Charles T. Horngren",
+      "publisher": "中國人民大學出版社",
+      "category": "會計學"
+    },
+    {
+      "id": "019",
+      "title": "Python編程：從入門到實踐",
+      "author": "Eric Matthes",
+      "publisher": "人民郵電出版社",
+      "category": "程式設計"
+    },
+    {
+      "id": "020",
+      "title": "JavaScript高級程序設計",
+      "author": "Nicholas C. Zakas",
+      "publisher": "人民郵電出版社",
+      "category": "程式設計"
+    }
+  ],
+
+  "user_profiles": {
+    "cs_student": {
+      "description": "計算機科學系學生",
+      "borrow_history": [
+        {"title": "Java編程思想"},
+        {"title": "深入理解計算機系統"},
+        {"title": "算法導論"}
+      ]
+    },
+    "business_student": {
+      "description": "商管系學生",
+      "borrow_history": [
+        {"title": "管理學原理"},
+        {"title": "市場營銷學"}
+      ]
+    },
+    "literature_lover": {
+      "description": "文學愛好者",
+      "borrow_history": [
+        {"title": "紅樓夢"},
+        {"title": "三國演義"}
+      ]
+    },
+    "new_user": {
+      "description": "新用戶（無借閱歷史）",
+      "borrow_history": []
+    },
+    "diverse_reader": {
+      "description": "興趣廣泛的讀者",
+      "borrow_history": [
+        {"title": "算法導論"},
+        {"title": "紅樓夢"},
+        {"title": "經濟學原理"}
+      ]
+    }
+  },
+
+  "test_scenarios": [
+    {
+      "name": "計算機書籍推薦",
+      "description": "為計算機科學學生推薦相關書籍",
+      "user_history": ["Java編程思想", "設計模式"],
+      "available_books": ["001", "002", "003", "004", "005"],
+      "expected_categories": ["計算機科學", "軟件工程"]
+    },
+    {
+      "name": "跨領域推薦",
+      "description": "為興趣廣泛的讀者推薦書籍",
+      "user_history": ["算法導論", "紅樓夢"],
+      "available_books": ["001", "002", "011", "012", "015"],
+      "expected_diversity": true
+    },
+    {
+      "name": "新用戶推薦",
+      "description": "為無借閱歷史的新用戶推薦書籍",
+      "user_history": [],
+      "available_books": ["001", "002", "003", "011", "015"],
+      "expected_source": "fallback or ai"
+    }
+  ],
+
+  "performance_test_data": {
+    "small_dataset": {
+      "description": "小數據集（10本書）",
+      "book_count": 10,
+      "expected_time_seconds": 10
+    },
+    "medium_dataset": {
+      "description": "中數據集（50本書）",
+      "book_count": 50,
+      "expected_time_seconds": 20
+    },
+    "large_dataset": {
+      "description": "大數據集（100本書）",
+      "book_count": 100,
+      "expected_time_seconds": 30
+    }
+  },
+
+  "edge_cases": [
+    {
+      "name": "空書籍列表",
+      "user_history": ["Java編程思想"],
+      "available_books": [],
+      "expected_behavior": "應返回空推薦或錯誤"
+    },
+    {
+      "name": "只有一本書",
+      "user_history": ["Java編程思想"],
+      "available_books": ["001"],
+      "expected_behavior": "應推薦該唯一書籍"
+    },
+    {
+      "name": "重複書籍",
+      "user_history": ["Java編程思想", "Java編程思想"],
+      "available_books": ["001", "002"],
+      "expected_behavior": "應正常處理重複歷史"
+    },
+    {
+      "name": "超長書名",
+      "user_history": ["這是一本超級超級超級超級超級超級超級超級超級超級長的書名"],
+      "available_books": ["001"],
+      "expected_behavior": "應正常處理長字串"
+    }
+  ],
+
+  "api_responses": {
+    "healthy_service": {
+      "status": "healthy",
+      "model": "gpt-oss:20b-cloud",
+      "ollama_url": "https://ollama.com",
+      "using_api_key": true,
+      "available_models": 9
+    },
+    "successful_recommendation": {
+      "success": true,
+      "source": "ai",
+      "recommendations": [
+        {
+          "book_id": "001",
+          "reason": "推薦理由",
+          "score": 0.85
+        }
+      ]
+    },
+    "fallback_recommendation": {
+      "success": true,
+      "source": "fallback",
+      "recommendations": [
+        {
+          "book_id": "001",
+          "reason": "推薦閱讀《書名》by 作者",
+          "score": 0.7
+        }
+      ]
+    }
+  }
+}

@@ -1,69 +1,110 @@
-CLAUDE.md
-Improve_list/
-.claude/
+# Ignore everything by default
+/*
 
-.cursor/
+# Allow repository metadata and key docs
+!.gitignore
+!README.md
 
+# Allow top-level scripts necessary for build/deploy
+!start-server.sh
+!start-all-services.sh
+!run-tests.sh
+!docker-compose.yml
+!docker-start.sh
+!docker-run.sh
+!diagnose-notifications.sh
+!test-chat-api.sh
+!test-notification-api.sh
+!verify-ollama.sh
 
-*.class
+# Allow backend source and configuration
+!backend/
+backend/*
+!backend/src/
+!backend/src/**
+!backend/Dockerfile
+!backend/ai_service/
+backend/ai_service/*
+!backend/ai_service/*.py
+!backend/ai_service/*.sh
+!backend/ai_service/*.md
+!backend/ai_service/requirements.txt
+!backend/ai_service/Dockerfile
+!backend/ai_service/tests/
+backend/ai_service/tests/*
+!backend/ai_service/tests/*.py
+!backend/ai_service/tests/test_data.json
+# Optional backend manual test scripts (ignored)
+backend/tests/
+# Keep dependency jars under lib/
+!lib/
+lib/*
+!lib/*.jar
 
+# Re-ignore backend artifacts and runtime data
+backend/bin/
+backend/data/
+backend/library.db
+backend/ai_service/__pycache__/
+backend/ai_service/tests/__pycache__/
+backend/ai_service/*.pyc
+backend/ai_service/tests/*.pyc
 
+# Allow frontend source
+!web/
+web/*
+!web/package.json
+!web/package-lock.json
+!web/vite.config.ts
+!web/tsconfig.json
+!web/tsconfig.app.json
+!web/tsconfig.node.json
+!web/postcss.config.js
+!web/tailwind.config.js
+!web/index.html
+!web/Dockerfile
+!web/nginx.conf
+!web/src/
+!web/src/**
+!web/public/
+!web/public/**
+
+# Re-ignore frontend build artifacts
+web/node_modules/
+web/dist/
+
+# Allow shared Java tests
+!test/
+test/*
+!test/**/*.java
+
+# Allow dependency jars
+# Ignore local dependency jars
+lib/
+
+# Ignore everything else by default
 *.log
-
-
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-hs_err_pid*
-
-
-.DS_Store
-.AppleDouble
-.LSOverride
-
-
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-
-.vscode/
-*.code-workspace
-
-
-.idea/
-*.iml
-*.iws
-*.ipr
-out/
-
-# IDE - Eclipse
-.classpath
-.project
-.settings/
-bin/
-
-# IDE - NetBeans
-nbproject/
-build/
-nbbuild/
-dist/
-nbdist/
-
-# Temporary files
 *.tmp
 *.bak
 *.swp
 *~
+*.class
 
-# Database files
-data/library.db
-data/library.db-journal
+# Environment and secrets
+.env
+*.env
+backend/ai_service/.env
 
-# AI-generated context files
-GEMINI.md
+# Python cache
+__pycache__/
+*.pyc
+
+# macOS / OS artifacts
+.DS_Store
+
+# Node lock files other than explicitly allowed
+package-lock.json
+!web/package-lock.json
+web/README.md
+legacy/README.md
+test/README.md
