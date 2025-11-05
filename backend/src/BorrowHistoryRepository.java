@@ -194,6 +194,41 @@ public class BorrowHistoryRepository {
     }
 
     /**
+     * Find active borrowing record for a book (status = 'borrowing')
+     * Returns null if book is not currently borrowed
+     */
+    public BorrowHistory findActiveBorrowByBook(String bookId) {
+        String sql = """
+            SELECT id, user_id, book_id, book_title, borrow_date, due_date, return_date, status
+            FROM borrow_history
+            WHERE book_id = ? AND status = 'borrowing'
+            ORDER BY id DESC
+            LIMIT 1
+            """;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, bookId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return new BorrowHistory(
+                    rs.getInt("id"),
+                    rs.getString("user_id"),
+                    rs.getString("book_id"),
+                    rs.getString("book_title"),
+                    rs.getString("borrow_date"),
+                    rs.getString("due_date"),
+                    rs.getString("return_date"),
+                    rs.getString("status")
+                );
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to find active borrow record: " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    /**
      * Get all borrow history for a specific book
      * Useful for tracking book popularity
      */

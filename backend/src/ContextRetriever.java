@@ -96,14 +96,16 @@ public class ContextRetriever {
      */
     private void retrieveAvailableBooks(ChatContext context) {
         try {
-            // 使用簡單的查詢方法，避免複雜的 JOIN
             List<BookInfo> allBooks = new ArrayList<>();
 
-            // 獲取所有書籍（使用簡單的 SQL 查詢）
+            String sql = "SELECT id, title, author, publisher, description, is_available "
+                       + "FROM books "
+                       + "WHERE is_available = 1 "
+                       + "ORDER BY title COLLATE NOCASE";
+
             try (java.sql.Connection conn = bookRepo.getConnection();
                  java.sql.Statement stmt = conn.createStatement();
-                 java.sql.ResultSet rs = stmt.executeQuery(
-                     "SELECT id, title, author, publisher, description, is_available FROM books WHERE is_available = 1 LIMIT 20")) {
+                 java.sql.ResultSet rs = stmt.executeQuery(sql)) {
 
                 while (rs.next()) {
                     BookInfo book = new BookInfo(
@@ -113,6 +115,13 @@ public class ContextRetriever {
                         rs.getString("publisher"),
                         rs.getString("description")
                     );
+
+                    if (rs.getInt("is_available") == 1) {
+                        book.markAsReturned();
+                    } else {
+                        book.markAsBorrowed();
+                    }
+
                     allBooks.add(book);
                 }
             }

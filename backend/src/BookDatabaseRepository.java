@@ -14,6 +14,16 @@ public class BookDatabaseRepository {
     private final String dbFile;
     private final String dbUrl;
 
+    static {
+        try {
+            DriverManager.registerDriver(new org.sqlite.JDBC());
+        } catch (SQLException e) {
+            System.err.println("⚠️  Unable to register SQLite driver: " + e.getMessage());
+        } catch (Throwable t) {
+            System.err.println("⚠️  SQLite JDBC driver not found: " + t.getMessage());
+        }
+    }
+
     /**
      * Constructor with default database path
      */

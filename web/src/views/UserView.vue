@@ -17,7 +17,11 @@ onMounted(async () => {
   await authStore.checkAuth()
 
   // 載入書籍和統計資訊
-  await Promise.all([booksStore.loadBooks(), booksStore.loadStats()])
+  await Promise.all([
+    booksStore.loadBooks(),
+    booksStore.loadStats(),
+    booksStore.loadMyBorrowings()
+  ])
 })
 </script>
 

@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { bookApi, statsApi } from '@/api'
-import type { Book, Stats, SortOption } from '@/types'
+import { bookApi, statsApi, historyApi } from '@/api'
+import { useAuthStore } from './auth'
+import type { Book, Stats, SortOption, BorrowHistory } from '@/types'
 
 export const useBooksStore = defineStore('books', () => {
   // 狀態
@@ -14,6 +15,7 @@ export const useBooksStore = defineStore('books', () => {
   const loading = ref(false)
   const searchQuery = ref('')
   const sortBy = ref<SortOption>('id')
+  const currentBorrowings = ref<BorrowHistory[]>([])
 
   // 計算屬性 - 篩選和排序後的書籍
   const filteredBooks = computed(() => {
@@ -53,6 +55,8 @@ export const useBooksStore = defineStore('books', () => {
     return result
   })
 
+  const borrowedBookIds = computed(() => new Set(currentBorrowings.value.map(record => record.bookId)))
+
   // 載入所有書籍
   async function loadBooks() {
     loading.value = true
@@ -75,6 +79,21 @@ export const useBooksStore = defineStore('books', () => {
     }
   }
 
+  // 載入使用者目前借閱中的書籍
+  async function loadMyBorrowings() {
+    const authStore = useAuthStore()
+    if (!authStore.isLoggedIn) {
+      currentBorrowings.value = []
+      return
+    }
+    try {
+      currentBorrowings.value = await historyApi.getCurrentBorrowings()
+    } catch (error) {
+      console.error('載入個人借閱清單失敗:', error)
+      currentBorrowings.value = []
+    }
+  }
+
   // 借書
   async function borrowBook(bookId: string) {
     try {
@@ -82,6 +101,7 @@ export const useBooksStore = defineStore('books', () => {
       // 重新載入書籍列表
       await loadBooks()
       await loadStats()
+      await loadMyBorrowings()
 
       // 立即更新未讀通知數量（通知已經由後端創建）
       const { useNotificationsStore } = await import('./notifications')
@@ -104,6 +124,7 @@ export const useBooksStore = defineStore('books', () => {
       // 重新載入書籍列表
       await loadBooks()
       await loadStats()
+      await loadMyBorrowings()
 
       // 立即更新未讀通知數量（通知已經由後端創建）
       const { useNotificationsStore } = await import('./notifications')
@@ -126,6 +147,7 @@ export const useBooksStore = defineStore('books', () => {
       // 重新載入書籍列表和統計資訊
       await loadBooks()
       await loadStats()
+      await loadMyBorrowings()
       return { success: true, message: '新增書籍成功' }
     } catch (error: any) {
       return {
@@ -141,6 +163,7 @@ export const useBooksStore = defineStore('books', () => {
       await bookApi.updateBook(book)
       // 重新載入書籍列表
       await loadBooks()
+      await loadMyBorrowings()
       return { success: true, message: '更新書籍成功' }
     } catch (error: any) {
       return {
@@ -157,6 +180,7 @@ export const useBooksStore = defineStore('books', () => {
       // 重新載入書籍列表和統計資訊
       await loadBooks()
       await loadStats()
+      await loadMyBorrowings()
       return { success: true, message: '刪除書籍成功' }
     } catch (error: any) {
       return {
@@ -172,13 +196,17 @@ export const useBooksStore = defineStore('books', () => {
     loading,
     searchQuery,
     sortBy,
+    currentBorrowings,
+    borrowedBookIds,
     filteredBooks,
     loadBooks,
     loadStats,
+    loadMyBorrowings,
     borrowBook,
     returnBook,
     addBook,
     updateBook,
     deleteBook,
+    isBookBorrowedByCurrentUser: (bookId: string) => borrowedBookIds.value.has(bookId),
   }
 })

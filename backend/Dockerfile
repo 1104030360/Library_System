@@ -40,9 +40,16 @@ RUN javac -cp "lib/*:bin" -d bin \
     src/BookRatingRepository.java \
     src/BookReviewRepository.java \
     src/NotificationRepository.java \
-    src/TaskManager.java
+    src/TaskManager.java \
+    src/LibraryRulesRepository.java
 
-# Layer 3: Service Layer (depends on Layer 1, 2)
+# Layer 2.5: RAG Components (depends on Layer 1, 2)
+RUN javac -cp "lib/*:bin" -d bin \
+    src/QuestionClassifier.java \
+    src/ChatContext.java \
+    src/ContextRetriever.java
+
+# Layer 3: Service Layer (depends on Layer 1, 2, 2.5)
 RUN javac -cp "lib/*:bin" -d bin \
     src/ApiSessionManager.java \
     src/ApiAuthenticationHelper.java \

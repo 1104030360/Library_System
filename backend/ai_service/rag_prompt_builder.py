@@ -7,6 +7,15 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 
+def truncate_text(text: str, limit: int = 120) -> str:
+    """
+    安全截斷文字，避免過長內容淹沒 prompt
+    """
+    if not text:
+        return ""
+    return text if len(text) <= limit else text[:limit] + "..."
+
+
 def format_borrow_history(history: List[Dict[str, Any]]) -> str:
     """
     格式化借閱歷史記錄
@@ -44,7 +53,61 @@ def format_borrow_history(history: List[Dict[str, Any]]) -> str:
     return "\n".join(result)
 
 
-def format_available_books(books: List[Dict[str, Any]], limit: int = 20) -> str:
+def format_current_borrowings(current: List[Dict[str, Any]]) -> str:
+    """
+    格式化目前借閱中的書籍
+    """
+    if not current:
+        return ""
+
+    result = []
+    result.append(f"目前借閱中（共 {len(current)} 本）：")
+
+    for idx, record in enumerate(current, 1):
+        title = record.get("bookTitle", "未知書名")
+        book_id = record.get("bookId", "N/A")
+        borrow_date = record.get("borrowDate", "N/A")
+        due_date = record.get("dueDate", "未提供")
+        status = record.get("status", "unknown")
+
+        status_text = {
+            "borrowed": "借閱中",
+            "overdue": "逾期",
+            "dueSoon": "即將到期"
+        }.get(status, status)
+
+        result.append(
+            f"{idx}. 《{title}》(ID: {book_id}) - 借出: {borrow_date}, 到期: {due_date}, 狀態: {status_text}"
+        )
+
+    return "\n".join(result)
+
+
+def format_target_book(book: Dict[str, Any]) -> str:
+    """
+    格式化使用者查詢的目標書籍資訊
+    """
+    if not book:
+        return ""
+
+    availability = "可借閱" if book.get("available", True) else "已借出"
+    description = truncate_text(book.get("description", ""), 200)
+    borrow_count = book.get("borrowCount", 0) or 0
+    average_rating = book.get("averageRating", 0) or 0.0
+    review_count = book.get("reviewCount", 0) or 0
+
+    return (
+        "目標書籍資訊：\n"
+        f"- 書名：{book.get('title', '未知')} (ID: {book.get('id', 'N/A')})\n"
+        f"- 作者：{book.get('author', '未知作者')}\n"
+        f"- 出版社：{book.get('publisher', '未知出版社')}\n"
+        f"- 狀態：{availability}\n"
+        f"- 借閱次數：{borrow_count} / 平均評分：{float(average_rating):.1f}（{review_count} 則評論）\n"
+        f"- 簡介：{description}"
+    )
+
+
+def format_available_books(books: List[Dict[str, Any]], limit: int = 50) -> str:
     """
     格式化可借閱書籍列表
     
@@ -68,19 +131,21 @@ def format_available_books(books: List[Dict[str, Any]], limit: int = 20) -> str:
         title = book.get("title", "未知書名")
         author = book.get("author", "未知作者")
         publisher = book.get("publisher", "未知出版社")
-        description = book.get("description", "")
-        
+        description = truncate_text(book.get("description", ""), 120)
+
         book_info = f"{idx}. 《{title}》(ID: {book_id}) - {author} / {publisher}"
-        
-        if description and len(description) > 0:
-            # 限制描述長度
-            short_desc = description[:50] + "..." if len(description) > 50 else description
-            book_info += f"\n   簡介: {short_desc}"
+
+        availability = book.get("available", True)
+        if not availability:
+            book_info += "（目前已借出）"
+
+        if description:
+            book_info += f"\n   簡介: {description}"
         
         result.append(book_info)
     
     if len(books) > limit:
-        result.append(f"... 還有 {len(books) - limit} 本書籍未顯示")
+        result.append(f"... 還有 {len(books) - limit} 本書籍未顯示，請告知是否需要更多清單")
     
     return "\n".join(result)
 
@@ -185,20 +250,34 @@ def build_rag_system_prompt(context: Dict[str, Any]) -> str:
     if stats:
         sections.append(format_library_stats(stats))
         sections.append("")
-    
+
     # 2. 使用者借閱歷史
     borrow_history = context.get("borrowHistory")
     if borrow_history:
         sections.append(format_borrow_history(borrow_history))
         sections.append("")
-    
-    # 3. 可借閱書籍
+
+    # 3. 目前借閱中
+    current = context.get("currentBorrowings")
+    current_section = format_current_borrowings(current)
+    if current_section:
+        sections.append(current_section)
+        sections.append("")
+
+    # 4. 目標書籍
+    target_book = context.get("targetBook")
+    target_section = format_target_book(target_book)
+    if target_section:
+        sections.append(target_section)
+        sections.append("")
+
+    # 5. 可借閱書籍
     available_books = context.get("availableBooks")
     if available_books:
         sections.append(format_available_books(available_books))
         sections.append("")
-    
-    # 4. 圖書館規則
+
+    # 6. 圖書館規則
     library_rules = context.get("libraryRules")
     if library_rules:
         sections.append(format_library_rules(library_rules))
@@ -237,13 +316,21 @@ def validate_context(context: Dict[str, Any]) -> tuple:
         
         if "availableBooks" in context and not isinstance(context["availableBooks"], list):
             return False, "availableBooks must be a list"
-        
+
         if "libraryRules" in context and not isinstance(context["libraryRules"], list):
             return False, "libraryRules must be a list"
-        
+
         if "stats" in context and not isinstance(context["stats"], dict):
             return False, "stats must be a dictionary"
-    
+
+        if "currentBorrowings" in context and context["currentBorrowings"] is not None:
+            if not isinstance(context["currentBorrowings"], list):
+                return False, "currentBorrowings must be a list"
+
+        if "targetBook" in context and context["targetBook"] is not None:
+            if not isinstance(context["targetBook"], dict):
+                return False, "targetBook must be a dictionary"
+
     return True, ""
 
 

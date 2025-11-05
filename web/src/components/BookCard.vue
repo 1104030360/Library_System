@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { NButton, NTag, NRate, useMessage } from 'naive-ui'
 import { useAuthStore } from '@/stores/auth'
 import { useBooksStore } from '@/stores/books'
@@ -30,6 +30,7 @@ const authStore = useAuthStore()
 const booksStore = useBooksStore()
 const router = useRouter()
 const message = useMessage()
+const isBorrowedByMe = computed(() => booksStore.isBookBorrowedByCurrentUser(props.book.id))
 
 const handleBorrow = async () => {
   if (!authStore.isLoggedIn) {
@@ -152,8 +153,25 @@ onMounted(() => {
         >
           借書
         </NButton>
-        <NButton v-else type="default" size="medium" block @click="handleReturn" style="font-weight: 600">
+        <NButton
+          v-else-if="isBorrowedByMe"
+          type="default"
+          size="medium"
+          block
+          @click="handleReturn"
+          style="font-weight: 600"
+        >
           還書
+        </NButton>
+        <NButton
+          v-else
+          type="default"
+          size="medium"
+          block
+          disabled
+          style="font-weight: 600"
+        >
+          已被借出
         </NButton>
       </template>
 

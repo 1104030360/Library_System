@@ -1,6 +1,7 @@
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
 import java.io.File;
+import java.sql.Connection;
 import java.util.List;
 
 /**
@@ -28,6 +29,7 @@ public class BookDatabaseRepositoryTest {
         // Create new repository with test database
         repository = new BookDatabaseRepository(TEST_DB);
         repository.initialize();
+        initializeSupportTables(repository);
     }
 
     @AfterEach
@@ -36,6 +38,16 @@ public class BookDatabaseRepositoryTest {
         File dbFile = new File(TEST_DB);
         if (dbFile.exists()) {
             dbFile.delete();
+        }
+    }
+
+    private void initializeSupportTables(BookDatabaseRepository repo) {
+        try (Connection conn = repo.getConnection()) {
+            new BorrowHistoryRepository(conn);
+            new BookRatingRepository(conn);
+            new BookReviewRepository(conn);
+        } catch (Exception e) {
+            fail("Failed to initialize support tables: " + e.getMessage());
         }
     }
 
@@ -50,12 +62,17 @@ public class BookDatabaseRepositoryTest {
         List<BookInfo> books = repository.getAllBooks();
 
         assertNotNull(books, "Books list should not be null");
-        assertEquals(5, books.size(), "Should have 5 default books");
+        assertEquals(20, books.size(), "Should have 20 default books");
 
-        // Check first book
-        BookInfo firstBook = books.get(0);
-        assertEquals("001", firstBook.getId());
-        assertEquals("Java", firstBook.getTitle());
+        BookInfo firstBook = null;
+        for (BookInfo book : books) {
+            if ("001".equals(book.getId())) {
+                firstBook = book;
+                break;
+            }
+        }
+        assertNotNull(firstBook, "Should include book with ID 001");
+        assertEquals("深入淺出 Java 程式設計", firstBook.getTitle());
         assertTrue(firstBook.isAvailable(), "Default books should be available");
     }
 
@@ -69,7 +86,7 @@ public class BookDatabaseRepositoryTest {
         // Find existing book
         BookInfo book = repository.findById("001");
         assertNotNull(book, "Should find book with ID 001");
-        assertEquals("Java", book.getTitle());
+        assertEquals("深入淺出 Java 程式設計", book.getTitle());
 
         // Find non-existing book
         BookInfo notFound = repository.findById("999");
@@ -158,14 +175,14 @@ public class BookDatabaseRepositoryTest {
         List<BookInfo> books = repository.getAllBooks();
 
         assertNotNull(books);
-        assertEquals(5, books.size(), "Should have 5 default books");
+        assertEquals(20, books.size(), "Should have 20 default books");
 
         // Add a book
         repository.addBook(new BookInfo("999", "New Book", "Author", "Publisher"));
 
         // Should now have 6 books
         books = repository.getAllBooks();
-        assertEquals(6, books.size());
+        assertEquals(21, books.size());
     }
 
     /**
@@ -178,8 +195,8 @@ public class BookDatabaseRepositoryTest {
         String stats = repository.getStatistics();
 
         assertNotNull(stats);
-        assertTrue(stats.contains("Total: 5"), "Should show 5 total books");
-        assertTrue(stats.contains("Available: 5"), "Should show 5 available books");
+        assertTrue(stats.contains("Total: 20"), "Should show 20 total books");
+        assertTrue(stats.contains("Available: 20"), "Should show 20 available books");
         assertTrue(stats.contains("Borrowed: 0"), "Should show 0 borrowed books");
 
         // Borrow a book
@@ -189,7 +206,7 @@ public class BookDatabaseRepositoryTest {
 
         // Check stats again
         stats = repository.getStatistics();
-        assertTrue(stats.contains("Available: 4"), "Should show 4 available after borrowing");
+        assertTrue(stats.contains("Available: 19"), "Should show 19 available after borrowing");
         assertTrue(stats.contains("Borrowed: 1"), "Should show 1 borrowed");
     }
 
@@ -200,11 +217,11 @@ public class BookDatabaseRepositoryTest {
     @Test
     @Order(8)
     public void testFindByTitle() {
-        BookInfo book = repository.findByTitle("Java");
+        BookInfo book = repository.findByTitle("深入淺出 Java 程式設計");
 
         assertNotNull(book);
         assertEquals("001", book.getId());
-        assertEquals("Java", book.getTitle());
+        assertEquals("深入淺出 Java 程式設計", book.getTitle());
 
         // Non-existing title
         BookInfo notFound = repository.findByTitle("Non-existing Book");
@@ -240,7 +257,7 @@ public class BookDatabaseRepositoryTest {
 
         // Verify final state
         List<BookInfo> allBooks = repository.getAllBooks();
-        assertEquals(6, allBooks.size(), "Should have 6 books total");
+        assertEquals(21, allBooks.size(), "Should have 21 books total");
 
         BookInfo check001 = repository.findById("001");
         assertTrue(check001.isAvailable(), "Book 001 should be available");
@@ -265,6 +282,7 @@ public class BookDatabaseRepositoryTest {
         // Create new repository instance (simulating server restart)
         BookDatabaseRepository newRepository = new BookDatabaseRepository(TEST_DB);
         newRepository.initialize();
+        initializeSupportTables(newRepository);
 
         // Data should still be there
         BookInfo book = newRepository.findById("888");
@@ -273,7 +291,7 @@ public class BookDatabaseRepositoryTest {
 
         // Default books should not be re-inserted
         List<BookInfo> books = newRepository.getAllBooks();
-        // Should have 5 default + 1 added = 6 total
-        assertEquals(6, books.size(), "Should not duplicate default books on re-initialization");
+        // Should have 20 default + 1 added = 21 total
+        assertEquals(21, books.size(), "Should not duplicate default books on re-initialization");
     }
 }

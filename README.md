@@ -1,302 +1,133 @@
-# 中大圖書館借還系統
+# Modern AI-Powered Library Management System
 
-這是一個圖書館管理系統，從 Swing 桌面應用程式演進為採用 RESTful API 和 SQLite 資料庫的現代 Web 應用程式。此專案為中央大學資管系期末專題。
+This project is a library management system that has evolved from a traditional Swing desktop application to a modern web application integrating AI services, real-time recommendations, and contemporary web technologies. The project aims to demonstrate the full lifecycle of a full-stack application, from backend APIs and frontend interactive interfaces to the implementation and containerized deployment of intelligent features.
 
-**最新版本採用 Vue 3 + Vite + TypeScript 架構，提供現代化的使用者體驗。**
-
----
-
-## 系統簡介
-
-### 核心功能
-- **Vue 3 現代前端**: 採用 Vue 3 + Naive UI + Tailwind CSS 構建
-- **Web-based UI**: 跨平台存取，支援任何瀏覽器
-- **SQLite 資料庫**: 持久化資料儲存
-- **Cookie-based 認證**: 安全的 Session 管理
-- **即時搜尋排序**: Client-side 即時過濾
-- **完整測試覆蓋**: 使用 JUnit 5 測試框架
-
-### 設計理念
-- **極簡主義**: 採用 2025 極簡設計趨勢
-- **TypeScript**: 完整的類型安全
-- **響應式設計**: 支援手機、平板、桌面
+At a glance:
+- **Backend Core API** – Java 17 (native `com.sun.net.httpserver`) + SQLite via JDBC
+- **AI Microservice** – Python 3 + Flask + Ollama SDK
+- **Frontend** – Vue 3 + TypeScript + Vite + Tailwind CSS
+- **Deployment** – Docker / Docker Compose (Nginx, Backend, AI service, Ollama)
 
 ---
 
-## 快速開始
+## What Can Users Do? (User Features)
 
-### 🚀 方法 1: Docker 一鍵部署 (推薦) ⭐ **New**
+This system provides comprehensive functionalities for both library patrons and administrators:
 
-**適用場景**: 生產環境部署、完整系統測試、包含 AI 推薦功能
+-   **Book Browsing and Searching**: Users can browse all books in the collection and quickly find specific books using a real-time search function.
+-   **User Authentication**: Provides secure login/logout mechanisms and defines permissions for different user roles (e.g., patron, employee, director).
+-   **Borrowing and Returning**: Logged-in users can easily borrow and return books, and the system updates the book status in real-time.
+-   **Borrowing History Tracking**: Users can view their complete borrowing history.
+-   **Book Ratings and Reviews**: Users can rate books and write reviews to share their reading experiences.
+-   **Smart Notification Service**: The system schedules and sends notifications, such as reminders for books that are due soon.
+-   **Administrator Functions**: Employees or directors have additional permissions to add new books and manage the collection through a dedicated interface.
+
+---
+
+## Special Features of This Project
+
+This project is more than just a CRUD application; it integrates several modern technologies that make it powerful and unique:
+
+### AI-Powered Q&A Assistant
+-   **Domain Knowledge-Enhanced Q&A**: To provide accurate, localized answers, the system's AI assistant uses a knowledge enhancement method. It combines the library's core knowledge base (such as rules from `LibraryRulesRepository` and book data) with a local Large Language Model (LLM) powered by **Ollama**. This design allows the LLM to break free from the limitations of general knowledge and generate highly relevant and reliable answers for scenarios specific to the library.
+-   **Python AI Microservice**: This feature is provided by a separate Python (Flask) microservice named `ai_service`, which separates the responsibilities of the backend services.
+
+### Real-time Personalized Book Recommendations
+-   **WebSocket Technology**: The system utilizes a `RecommendationWebSocketServer` to push personalized book recommendations to the frontend in real-time via WebSockets.
+-   **Asynchronous Tasks**: Recommendation content is generated asynchronously in the background by the `RecommendationService`, ensuring a smooth user experience without impacting main operations.
+
+### Modern Frontend Experience
+-   **Vue 3 & Vite & TypeScript**: The frontend is built with the latest Vue 3 framework, combined with Vite for an extremely fast development experience, and uses TypeScript throughout to ensure code robustness and maintainability.
+-   **Tailwind CSS**: Uses the utility-first Tailwind CSS framework to create a beautiful, consistent, and highly customizable responsive interface.
+
+### Microservice-Inspired Backend Architecture
+-   **Separation of Concerns**: The project adopts a microservice-like design philosophy, separating the core library business logic (Java) from the computationally intensive AI functions (Python). The two communicate via APIs. This design improves the system's flexibility and scalability.
+
+### Complete Containerization Solution
+-   **Docker & Docker Compose**: The entire application (including the Vue frontend, Java backend, Python AI service, and Ollama model) is fully containerized. Developers can launch all services with a single `docker-compose up` command in any environment, greatly simplifying deployment and development setup.
+
+---
+
+## System Architecture
+
+This project consists of the following core components:
+
+1.  **Frontend**:
+    -   A Single Page Application (SPA) based on **Vue 3**.
+    -   Uses **Vite** for project building and development.
+    -   Implements a responsive and modern UI with **Tailwind CSS**.
+    -   Communicates with the backend API asynchronously.
+
+2.  **Backend - Core API**:
+    -   A lightweight RESTful API server built with Java's native `com.sun.net.httpserver`.
+    -   Handles core business logic such as book management, user authentication, and borrowing/returning.
+    -   Interacts directly with the SQLite database via JDBC.
+
+3.  **Backend - AI Service**:
+    -   A separate **Python** server using the **Flask** framework.
+    -   Handles the knowledge-enhanced Q&A logic and integrates with **Ollama** to provide LLM inference capabilities.
+    -   Specializes in handling natural language queries from the frontend.
+
+4.  **Database**:
+    -   Uses **SQLite** as a lightweight, file-based database to store all application data (books, users, reviews, etc.).
+
+5.  **Real-time Layer**:
+    -   A **WebSocket** server built into the Java backend for pushing real-time recommendations and notifications to clients.
+
+---
+
+## Quick Start (One-Click Docker Deployment)
+
+Using Docker for deployment is strongly recommended as it is the simplest and most reliable method.
 
 ```bash
-# 一鍵啟動所有服務 (4 個容器)
+# First, navigate to the project root directory
+cd /path/to/your/JavaProj\ 2
+
+# Start all services with a single command (frontend, backend, AI, database)
 docker-compose up -d
 
-# 檢查服務狀態
+# Check the running status of all containers
 docker-compose ps
 
-# 查看日誌
-docker-compose logs -f
+# To view the logs of any service
+docker-compose logs -f <service_name>  # e.g., docker-compose logs -f backend
 ```
 
-**訪問服務:**
-- **Vue 3 前端**: `http://localhost:80` (或 8080，視端口配置)
-- **Backend API**: `http://localhost:7070`
-- **AI 推薦服務**: `http://localhost:8888`
-- **Ollama LLM API**: `http://localhost:11434`
+**Service Access URLs:**
 
-**測試帳號:**
-- 館長 (Boss): `0001` / `1111`
-- 館員 (Employee): `0002` / `2222`
+-   **Frontend Application**: `http://localhost:7777` (served by Nginx)
+-   **Java Backend API**: `http://localhost:7070`
+-   **Python AI Service**: `http://localhost:8888`
+-   **Ollama LLM API**: `http://localhost:11434`
 
-**停止服務:**
+**Stopping all services:**
+
 ```bash
 docker-compose down
 ```
 
-**完整 Docker 文件**: 參閱 `DOCKER.md` 獲取詳細部署指南
-
 ---
 
-### 🛠 方法 2: 本地開發模式（傳統啟動）
+## Testing
 
-**適用場景**: 本地開發、前端開發、快速測試
-
-**步驟 1: 啟動後端 API**
+The project includes a comprehensive JUnit 5 test suite covering the database, authentication, and API layers.
 
 ```bash
-./start-server.sh
-```
-
-後端將啟動在 `http://localhost:7070`
-
-**步驟 2: 啟動前端 Vue 3 應用**
-
-```bash
-cd web
-npm install          # 首次執行需要安裝依賴
-npm run dev
-```
-
-前端將啟動在 `http://localhost:5173`
-
-**訪問應用程式:**
-- **Vue 3 前端 (新版)**: `http://localhost:5173` - 現代化介面，採用 Vue 3 + Naive UI + Tailwind CSS
-- **舊版前端**: `http://localhost:7070` - 傳統 HTML 介面
-
-**測試帳號:**
-- 館長 (Boss): `0001` / `1111`
-- 館員 (Employee): `0002` / `2222`
-
----
-
-## 功能
-
-### 書籍清單
-- 顯示所有書籍 (書名、作者、出版社、狀態)。
-- 即時搜尋與排序。
-- 借閱/歸還書籍。
-- 顯示圖書館統計資訊。
-
-### 管理員功能 (新增) ⭐
-- **新增書籍**: 管理員可通過 Web 介面新增書籍到資料庫
-  - 完整的表單驗證 (ID、書名、作者、出版社)
-  - 自動檢查重複 ID
-  - 權限控制：只有館長和館員可訪問
-  - 訪問路徑：`/add-book`
-
-### 登入
-- 基於 Cookie 的身份驗證。
-- 測試帳號:
-    - 館長 (Boss): `0001` / `1111`
-    - 館員 (Employee): `0002` / `2222`
-
----
-
-## 專案結構
-
-```
-JavaProj 2/
-├── backend/                    # 後端程式碼
-│   ├── src/                   # 原始碼
-│   │   ├── LibraryApiServer.java          # 主伺服器 (HTTP handlers)
-│   │   ├── BookDatabaseRepository.java    # 資料庫存取層
-│   │   ├── ApiAuthenticationHelper.java   # 認證模組
-│   │   ├── ApiSessionManager.java         # Session 管理
-│   │   ├── StaticFileHandler.java         # 靜態檔案處理
-│   │   ├── BookInfo.java                  # 資料模型
-│   │   ├── RecommendationService.java     # AI 推薦服務 ⭐
-│   │   └── User.java, BookRating.java...  # 其他模型類
-│   ├── ai_service/            # AI 推薦微服務 (Python Flask) ⭐
-│   │   ├── Dockerfile         # AI Service Docker 配置
-│   │   ├── app.py             # Flask 應用入口
-│   │   ├── ollama_service.py  # Ollama LLM 整合
-│   │   └── requirements.txt   # Python 依賴
-│   ├── Dockerfile             # Backend Docker 配置 ⭐
-│   └── bin/                   # 編譯輸出
-│
-├── web/                        # 前端程式碼 (Vue 3 + Vite)
-│   ├── Dockerfile             # Frontend Docker 配置 ⭐
-│   ├── nginx.conf             # Nginx 配置 ⭐
-│   ├── src/                   # Vue 3 應用程式碼
-│   │   ├── api/               # API 通訊層
-│   │   ├── components/        # Vue 組件
-│   │   │   ├── AppHeader.vue
-│   │   │   ├── BookCard.vue
-│   │   │   ├── BookList.vue
-│   │   │   ├── LoginForm.vue
-│   │   │   ├── SearchBar.vue
-│   │   │   ├── StatsBar.vue
-│   │   │   └── LiquidBackground.vue
-│   │   ├── router/            # Vue Router 路由配置
-│   │   ├── stores/            # Pinia 狀態管理
-│   │   ├── types/             # TypeScript 類型定義
-│   │   ├── views/             # 頁面組件
-│   │   │   ├── HomeView.vue
-│   │   │   ├── LoginView.vue
-│   │   │   └── AddBookView.vue     # 新增書籍頁面 (管理員專用)
-│   │   ├── App.vue            # 根組件
-│   │   └── main.ts            # 應用入口
-│   ├── public/                # 靜態資源
-│   ├── package.json           # NPM 依賴配置
-│   ├── vite.config.ts         # Vite 配置
-│   └── tailwind.config.js     # Tailwind CSS 配置
-│
-├── test/                       # 測試程式碼
-│   ├── repository/
-│   ├── api/
-│   └── auth/
-│
-├── schedule/                   # 專案管理文件 ⭐
-│   ├── plan/                  # 開發計劃
-│   ├── reports/               # 完成報告
-│   │   └── 2025-11-02-Docker完整化計劃最終完成-REP.md ⭐
-│   └── todo/                  # 待辦事項
-│
-├── legacy/                     # 舊版程式碼 (已歸檔)
-│
-├── data/                       # 資料儲存
-│   └── library.db             # SQLite 資料庫
-│
-├── lib/                        # 外部函式庫
-│
-├── docker-compose.yml          # Docker Compose 配置 ⭐
-├── DOCKER.md                   # Docker 部署指南 ⭐
-├── start-server.sh             # 伺服器啟動腳本
-├── run-tests.sh                # 測試執行腳本
-└── README.md                   # 本文件
+# Run all backend tests
+./run-tests.sh
 ```
 
 ---
 
-## 測試系統
+## Technology Stack
 
-使用 `./run-tests.sh` 指令執行所有測試。
-
-測試涵蓋三個主要領域：
-1.  **Repository 測試**: 測試資料庫層的 CRUD 操作。
-2.  **認證系統測試**: 測試身份驗證和 Session 管理。
-3.  **API 整合測試**: 測試完整的 API 堆疊。
-
-詳細資訊請參閱 `test/README.md`。
-
----
-
-## API 端點
-
-### 書籍管理
-
-| Method | Endpoint            | 說明           | 認證 |
-|--------|---------------------|----------------|------|
-| GET    | `/api/books`        | 取得所有書籍   | 否   |
-| GET    | `/api/books?id=001` | 取得特定書籍   | 否   |
-| GET    | `/api/stats`        | 取得統計資訊   | 否   |
-| POST   | `/api/books/borrow` | 借閱書籍       | 是   |
-| POST   | `/api/books/return` | 歸還書籍       | 是   |
-
-### 認證管理
-
-| Method | Endpoint           | 說明                   |
-|--------|--------------------|------------------------|
-| POST   | `/api/auth/login`  | 登入 (取得 session cookie) |
-| POST   | `/api/auth/logout` | 登出 (清除 session)      |
-| GET    | `/api/auth/whoami` | 取得當前使用者資訊     |
-
----
-
-## 資料庫結構
-
-**`books` 表**
-
-| 欄位         | 類型    | 說明                     |
-|--------------|---------|--------------------------|
-| id           | TEXT    | 書籍 ID (Primary Key)    |
-| title        | TEXT    | 書名                     |
-| author       | TEXT    | 作者                     |
-| publisher    | TEXT    | 出版社                   |
-| is_available | INTEGER | 是否可借 (1=可借, 0=已借出) |
-
----
-
-## 技術棧
-
-### 後端
-- **語言**: Java
-- **HTTP Server**: `com.sun.net.httpserver.HttpServer`
-- **資料庫**: SQLite 3.45.1.0
-- **JSON**: Gson 2.10.1
-- **測試**: JUnit 5.10.1
-
-### 前端 (Vue 3 版本)
-- **框架**: Vue 3.5+ (Composition API)
-- **構建工具**: Vite 7.1+
-- **UI 框架**: Naive UI 2.x
-- **樣式**: Tailwind CSS v4
-- **狀態管理**: Pinia 3.0+
-- **路由**: Vue Router 4.6+
-- **HTTP 客戶端**: Axios 1.13+
-- **語言**: TypeScript 5.9+
-
-### 前端 (舊版 - 傳統 HTML)
-- **HTML5**
-- **CSS3**
-- **JavaScript (ES6+)** (無框架)
-
----
-
-## 貢獻
-
-歡迎提交 Issue 和 Pull Request。
-
-### 開發流程
-1. Fork 專案
-2. 建立功能分支 (`git checkout -b feature/新功能`)
-3. 撰寫程式碼與測試
-4. 執行測試 (`./run-tests.sh`)
-5. Commit (`git commit -m 'Add 新功能'`)
-6. Push (`git push origin feature/新功能`)
-7. 建立 Pull Request
-
----
-
-## 授權
-
-本專案為學習專案，中央大學資管系期末作業。
-
----
-
-## 致謝
-
-- **中央大學資管系** - 提供學習環境
-- **Linus Torvalds** - 啟發開發哲學
-
----
-
-## 聯絡方式
-
-- **GitHub**: https://github.com/1104030360
-- **專案連結**: https://github.com/1104030360/JavaProj-2
+-   **Backend**: Java (Native HttpServer), Python (Flask), Gson, JUnit 5
+-   **Frontend**: Vue 3, Vite, TypeScript, Pinia, Vue Router, Tailwind CSS, Axios
+-   **AI**: Ollama, LangChain (conceptual)
+-   **Database**: SQLite
+-   **Real-time**: Java WebSocket
+-   **Deployment**: Docker, Docker Compose, Nginx
 
 ---
 

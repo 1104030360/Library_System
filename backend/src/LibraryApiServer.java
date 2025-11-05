@@ -411,18 +411,18 @@ public class LibraryApiServer {
                 return;
             }
 
-            // Get borrow info before returning (Phase 13)
-            BorrowHistory borrowInfo = null;
-            try {
-                List<BorrowHistory> currentBorrowings = historyRepository.getCurrentBorrowings(session.username);
-                for (BorrowHistory history : currentBorrowings) {
-                    if (history.getBookId().equals(request.bookId)) {
-                        borrowInfo = history;
-                        break;
-                    }
-                }
-            } catch (Exception e) {
-                System.err.println("Failed to get borrow info: " + e.getMessage());
+            // Ensure the book is currently borrowed by this user
+            BorrowHistory borrowInfo = historyRepository.findActiveBorrowByBook(request.bookId);
+            if (borrowInfo == null) {
+                String response = gson.toJson(new ErrorResponse("Book is not currently borrowed"));
+                sendResponse(exchange, 400, "application/json", response);
+                return;
+            }
+
+            if (!session.username.equals(borrowInfo.getUserId())) {
+                String response = gson.toJson(new ErrorResponse("You did not borrow this book"));
+                sendResponse(exchange, 403, "application/json", response);
+                return;
             }
 
             // Return book
@@ -430,7 +430,11 @@ public class LibraryApiServer {
             repository.updateBook(book);
 
             // Mark as returned in history (Phase 6)
-            historyRepository.markAsReturned(session.username, request.bookId);
+            boolean updated = historyRepository.markAsReturned(session.username, request.bookId);
+            if (!updated) {
+                System.err.println("❌ Failed to mark borrow history as returned for user " +
+                    session.username + " and book " + request.bookId);
+            }
 
             // Send return notification (Phase 13)
             if (borrowInfo != null) {
@@ -1292,7 +1296,7 @@ public class LibraryApiServer {
             // Get current borrowings
             List<BorrowHistory> current = historyRepository.getCurrentBorrowings(session.username);
 
-            HistoryResponse response = new HistoryResponse(true, current);
+            CurrentBorrowingsResponse response = new CurrentBorrowingsResponse(true, current);
             String json = gson.toJson(response);
             sendResponse(exchange, 200, "application/json", json);
         }
@@ -1401,6 +1405,16 @@ public class LibraryApiServer {
         public HistoryResponse(boolean success, List<BorrowHistory> history) {
             this.success = success;
             this.history = history;
+        }
+    }
+
+    static class CurrentBorrowingsResponse {
+        public boolean success;
+        public List<BorrowHistory> current;
+
+        public CurrentBorrowingsResponse(boolean success, List<BorrowHistory> current) {
+            this.success = success;
+            this.current = current;
         }
     }
 
@@ -2379,16 +2393,27 @@ public class LibraryApiServer {
 
                 System.out.println("📊 [ChatHandler] Context retrieved: hasData=" + !context.isEmpty());
                 if (!context.isEmpty()) {
-                    System.out.println("    " + context.getSummary());
-                }
+                System.out.println("    " + context.getSummary());
+            }
 
-                // 5. 將 ChatContext 轉換為 JSON
-                String contextJson = convertContextToJson(context);
+            // 5. 將 ChatContext 轉換為 JSON
+            String contextJson = convertContextToJson(context);
+            int contextSize = contextJson.length();
+            int borrowCount = context.getBorrowHistory() != null ? context.getBorrowHistory().size() : 0;
+            int currentCount = context.getCurrentBorrowings() != null ? context.getCurrentBorrowings().size() : 0;
+            int availableCount = context.getAvailableBooks() != null ? context.getAvailableBooks().size() : 0;
+            int rulesCount = context.getLibraryRules() != null ? context.getLibraryRules().size() : 0;
 
-                // 6. 呼叫 Python AI Service（使用 RAG）
-                String aiResponse = callAiServiceWithContext(
-                    userMessage,
-                    request.history,
+            System.out.println("📦 [ChatHandler] Context size: " + contextSize + " chars");
+            System.out.println("    借閱歷史: " + borrowCount +
+                               ", 當前借閱: " + currentCount +
+                               ", 可借書籍: " + availableCount +
+                               ", 規則數: " + rulesCount);
+
+            // 6. 呼叫 Python AI Service（使用 RAG）
+            String aiResponse = callAiServiceWithContext(
+                userMessage,
+                request.history,
                     contextJson
                 );
 
@@ -2452,11 +2477,42 @@ public class LibraryApiServer {
                     bookMap.put("title", book.getTitle());
                     bookMap.put("author", book.getAuthor());
                     bookMap.put("publisher", book.getPublisher());
-                    bookMap.put("description", book.getDescription() != null ?
-                        book.getDescription() : "");
+                    bookMap.put("available", book.isAvailable());
+                    bookMap.put("description", trimDescription(book.getDescription()));
                     booksList.add(bookMap);
                 }
                 contextMap.put("availableBooks", booksList);
+            }
+
+            // 當前借閱
+            if (context.getCurrentBorrowings() != null && !context.getCurrentBorrowings().isEmpty()) {
+                List<Map<String, Object>> currentList = new ArrayList<>();
+                for (BorrowHistory record : context.getCurrentBorrowings()) {
+                    Map<String, Object> recordMap = new HashMap<>();
+                    recordMap.put("bookId", record.getBookId());
+                    recordMap.put("bookTitle", record.getBookTitle());
+                    recordMap.put("borrowDate", record.getBorrowDate());
+                    recordMap.put("dueDate", record.getDueDate() != null ? record.getDueDate() : "未提供");
+                    recordMap.put("status", record.getStatus());
+                    currentList.add(recordMap);
+                }
+                contextMap.put("currentBorrowings", currentList);
+            }
+
+            // 目標書籍
+            if (context.getTargetBook() != null) {
+                BookInfo target = context.getTargetBook();
+                Map<String, Object> targetMap = new HashMap<>();
+                targetMap.put("id", target.getId());
+                targetMap.put("title", target.getTitle());
+                targetMap.put("author", target.getAuthor());
+                targetMap.put("publisher", target.getPublisher());
+                targetMap.put("available", target.isAvailable());
+                targetMap.put("description", trimDescription(target.getDescription()));
+                targetMap.put("borrowCount", target.getBorrowCount());
+                targetMap.put("averageRating", target.getAverageRating());
+                targetMap.put("reviewCount", target.getReviewCount());
+                contextMap.put("targetBook", targetMap);
             }
 
             // 圖書館規則
@@ -2482,6 +2538,17 @@ public class LibraryApiServer {
             }
 
             return gson.toJson(contextMap);
+        }
+
+        private String trimDescription(String description) {
+            if (description == null) {
+                return "";
+            }
+            int maxLength = 120;
+            if (description.length() <= maxLength) {
+                return description;
+            }
+            return description.substring(0, maxLength) + "...";
         }
 
         /**

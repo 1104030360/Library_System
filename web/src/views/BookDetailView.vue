@@ -37,6 +37,8 @@ const reviewsSection = ref<InstanceType<typeof ReviewsSection> | null>(null)
 const book = computed(() => {
   return booksStore.books.find(b => b.id === bookId)
 })
+const isBorrowedByMe = computed(() => booksStore.isBookBorrowedByCurrentUser(bookId))
+const isBorrowedByOthers = computed(() => !!book.value && !book.value.isAvailable && !isBorrowedByMe.value)
 
 // 載入評分
 const loadRating = async () => {
@@ -55,6 +57,8 @@ onMounted(async () => {
     if (booksStore.books.length === 0) {
       await booksStore.loadBooks()
     }
+
+    await booksStore.loadMyBorrowings()
 
     // Check if book exists
     if (!book.value) {
@@ -286,7 +290,7 @@ const handleReviewSubmitted = () => {
             借閱此書
           </NButton>
           <NButton
-            v-else
+            v-else-if="isBorrowedByMe"
             @click="handleReturn"
             type="warning"
             size="large"
@@ -294,6 +298,15 @@ const handleReviewSubmitted = () => {
             class="flex-1"
           >
             歸還此書
+          </NButton>
+          <NButton
+            v-else
+            type="default"
+            size="large"
+            disabled
+            class="flex-1"
+          >
+            已被其他讀者借出
           </NButton>
         </div>
       </div>

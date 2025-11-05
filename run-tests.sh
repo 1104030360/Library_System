@@ -49,8 +49,8 @@ fi
 # Run model tests
 echo ""
 echo "🧪 Running BookInfo tests..."
-java -jar lib/junit-platform-console-standalone-1.10.1.jar \
-    --class-path "lib/*:backend/bin:test/bin" \
+java -cp "lib/junit-platform-console-standalone-1.10.1.jar:backend/bin:test/bin:lib/*" \
+    org.junit.platform.console.ConsoleLauncher \
     --scan-class-path \
     --include-classname "BookInfoTest"
 
@@ -76,8 +76,8 @@ fi
 # Run repository tests
 echo ""
 echo "🧪 Running BookDatabaseRepository tests..."
-java -jar lib/junit-platform-console-standalone-1.10.1.jar \
-    --class-path "lib/*:backend/bin:test/bin" \
+java -cp "lib/junit-platform-console-standalone-1.10.1.jar:backend/bin:test/bin:lib/*" \
+    org.junit.platform.console.ConsoleLauncher \
     --scan-class-path \
     --include-classname "BookDatabaseRepositoryTest"
 
@@ -103,8 +103,8 @@ fi
 # Run authentication tests
 echo ""
 echo "🧪 Running Authentication tests..."
-java -jar lib/junit-platform-console-standalone-1.10.1.jar \
-    --class-path "lib/*:backend/bin:test/bin" \
+java -cp "lib/junit-platform-console-standalone-1.10.1.jar:backend/bin:test/bin:lib/*" \
+    org.junit.platform.console.ConsoleLauncher \
     --scan-class-path \
     --include-classname "AuthenticationTest"
 
@@ -137,8 +137,8 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     # Run API tests
     echo ""
     echo "🧪 Running API Integration tests..."
-    java -jar lib/junit-platform-console-standalone-1.10.1.jar \
-        --class-path "lib/*:backend/bin:test/bin" \
+    java -cp "lib/junit-platform-console-standalone-1.10.1.jar:backend/bin:test/bin:lib/*" \
+        org.junit.platform.console.ConsoleLauncher \
         --scan-class-path \
         --include-classname "LibraryApiIntegrationTest"
 

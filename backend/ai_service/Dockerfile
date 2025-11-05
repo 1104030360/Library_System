@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy service code
 COPY ollama_service_streaming.py .
+COPY rag_prompt_builder.py .
 
 # Expose port
 EXPOSE 8888

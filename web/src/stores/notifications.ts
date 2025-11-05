@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { notificationApi } from '@/api'
+import { useAuthStore } from './auth'
 import type { Notification } from '@/types'
 
 export const useNotificationsStore = defineStore('notifications', () => {
@@ -20,6 +21,12 @@ export const useNotificationsStore = defineStore('notifications', () => {
     limit?: number
     offset?: number
   }) {
+    const authStore = useAuthStore()
+    if (!authStore.isLoggedIn) {
+      notifications.value = []
+      unreadCount.value = 0
+      return { success: false, message: '未登入' }
+    }
     loading.value = true
     error.value = null
 
@@ -38,6 +45,11 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   // 獲取未讀數量
   async function fetchUnreadCount() {
+    const authStore = useAuthStore()
+    if (!authStore.isLoggedIn) {
+      unreadCount.value = 0
+      return { success: false }
+    }
     try {
       const data = await notificationApi.getUnreadCount()
       unreadCount.value = data.unreadCount
@@ -50,6 +62,10 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   // 標記單個通知為已讀
   async function markAsRead(notificationId: number) {
+    const authStore = useAuthStore()
+    if (!authStore.isLoggedIn) {
+      return { success: false, message: '未登入' }
+    }
     try {
       await notificationApi.markAsRead(notificationId)
 
@@ -69,6 +85,10 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   // 標記全部為已讀
   async function markAllAsRead() {
+    const authStore = useAuthStore()
+    if (!authStore.isLoggedIn) {
+      return { success: false, message: '未登入' }
+    }
     try {
       const data = await notificationApi.markAllAsRead()
 
@@ -85,6 +105,10 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   // 清空所有通知
   async function clearAllNotifications() {
+    const authStore = useAuthStore()
+    if (!authStore.isLoggedIn) {
+      return { success: false, message: '未登入' }
+    }
     try {
       const data = await notificationApi.clearNotifications()
 

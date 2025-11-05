@@ -23,7 +23,11 @@ const editingBook = ref<Book | null>(null)
 
 onMounted(async () => {
   await authStore.checkAuth()
-  await Promise.all([booksStore.loadBooks(), booksStore.loadStats()])
+  await Promise.all([
+    booksStore.loadBooks(),
+    booksStore.loadStats(),
+    booksStore.loadMyBorrowings()
+  ])
 })
 
 const handleEdit = (book: Book) => {
