@@ -81,6 +81,9 @@ This project consists of the following core components:
 Using Docker for deployment is strongly recommended as it is the simplest and most reliable method.
 
 ```bash
+# Prepare AI service configuration (only needed first time)
+cp backend/ai_service/.env_example backend/ai_service/.env
+
 # First, navigate to the project root directory
 cd /path/to/your/JavaProj\ 2
 
