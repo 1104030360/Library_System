@@ -78,10 +78,6 @@ web/dist/
 test/*
 !test/**/*.java
 
-# Allow dependency jars
-# Ignore local dependency jars
-lib/
-
 # Ignore everything else by default
 *.log
 *.tmp
